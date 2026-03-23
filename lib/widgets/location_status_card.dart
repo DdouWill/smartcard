@@ -10,9 +10,11 @@
 // ============================================================
 
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../models/member_card.dart';
 import '../services/location_service.dart';
+import '../utils/color_utils.dart';
 import 'barcode_display_widget.dart';
 
 /// 定位狀態卡片
@@ -80,33 +82,52 @@ class LocationStatusCard extends StatelessWidget {
   // ──────────────────────────────────────────
 
   Widget _buildDetectingCard(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.location_searching,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 18,
+      child: Shimmer.fromColors(
+        baseColor: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+        highlightColor: isDark ? Colors.grey[500]! : Colors.grey[100]!,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.location_searching,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '正在偵測附近店家...',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Shimmer placeholder bars
+              Container(
+                width: double.infinity,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(4),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  '正在偵測附近店家...',
-                  style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 8),
+              Container(
+                width: 160,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(4),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // 進度條
-            LinearProgressIndicator(
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -146,7 +167,7 @@ class LocationStatusCard extends StatelessWidget {
   // ──────────────────────────────────────────
 
   Widget _buildSingleMatchCard(BuildContext context, MemberCard card) {
-    final cardColor = _parseColor(card.cardColor) ??
+    final cardColor = parseHexColor(card.cardColor) ??
         Theme.of(context).colorScheme.primaryContainer;
 
     return Card(
@@ -272,7 +293,7 @@ class LocationStatusCard extends StatelessWidget {
                 itemCount: cards.length,
                 itemBuilder: (context, index) {
                   final card = cards[index];
-                  final color = _parseColor(card.cardColor) ??
+                  final color = parseHexColor(card.cardColor) ??
                       Theme.of(context).colorScheme.primaryContainer;
 
                   return Padding(
@@ -361,7 +382,7 @@ class LocationStatusCard extends StatelessWidget {
 
     // 顯示最近使用卡片（半透明）
     final card = recentCard!;
-    final cardColor = _parseColor(card.cardColor) ??
+    final cardColor = parseHexColor(card.cardColor) ??
         Theme.of(context).colorScheme.primaryContainer;
 
     return Opacity(
@@ -421,15 +442,4 @@ class LocationStatusCard extends StatelessWidget {
     );
   }
 
-  /// 解析 hex 顏色字串
-  Color? _parseColor(String? hex) {
-    if (hex == null || hex.isEmpty) return null;
-    try {
-      final cleaned = hex.replaceAll('#', '');
-      final withAlpha = cleaned.length == 6 ? 'FF$cleaned' : cleaned;
-      return Color(int.parse(withAlpha, radix: 16));
-    } catch (_) {
-      return null;
-    }
-  }
 }

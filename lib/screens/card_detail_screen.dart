@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
-import 'package:barcode_widget/barcode_widget.dart';
 
+import '../app_controller.dart';
+import '../models/app_settings.dart';
 import '../models/member_card.dart';
+import '../widgets/barcode_display_widget.dart';
 
 class CardDetailScreen extends StatefulWidget {
   final MemberCard card;
@@ -14,10 +16,12 @@ class CardDetailScreen extends StatefulWidget {
 }
 
 class _CardDetailScreenState extends State<CardDetailScreen> {
+  final _controller = AppController();
+
   @override
   void initState() {
     super.initState();
-    WakelockPlus.enable();
+    _applyBrightnessMode();
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -26,6 +30,17 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
         systemNavigationBarIconBrightness: Brightness.light,
       ),
     );
+  }
+
+  void _applyBrightnessMode() {
+    final mode = _controller.settings.brightnessMode;
+    switch (mode) {
+      case ScreenBrightnessMode.maximum:
+      case ScreenBrightnessMode.keepOn:
+        WakelockPlus.enable();
+      case ScreenBrightnessMode.system:
+        break;
+    }
   }
 
   @override
@@ -56,10 +71,25 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
             const Spacer(),
             Hero(
               tag: 'barcode_${widget.card.id}',
-              child: _BarcodeDisplay(
-                card: widget.card,
-                width: barcodeWidth,
-                height: barcodeHeight,
+              child: InteractiveViewer(
+                minScale: 1.0,
+                maxScale: 3.0,
+                child: Container(
+                  width: barcodeWidth,
+                  height: barcodeHeight,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  padding: const EdgeInsets.all(20),
+                  child: BarcodeDisplayWidget(
+                    barcodeValue: widget.card.barcodeValue,
+                    barcodeFormat: widget.card.barcodeFormat,
+                    width: barcodeWidth - 40,
+                    height: barcodeHeight - 40,
+                    showText: true,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 40),
@@ -76,7 +106,8 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
       children: [
         SelectableText(
           widget.card.barcodeValue,
-          style: const TextStyle(color: Colors.white, fontSize: 22, letterSpacing: 2),
+          style: const TextStyle(
+              color: Colors.white, fontSize: 22, letterSpacing: 2),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 12),
@@ -94,60 +125,5 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
         ),
       ],
     );
-  }
-}
-
-class _BarcodeDisplay extends StatelessWidget {
-  final MemberCard card;
-  final double width;
-  final double height;
-
-  const _BarcodeDisplay({required this.card, required this.width, required this.height});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      padding: const EdgeInsets.all(20),
-      child: _buildBarcodeWidget(),
-    );
-  }
-
-  Widget _buildBarcodeWidget() {
-    if (card.barcodeValue.trim().isEmpty) return const Center(child: Text('條碼不能為空'));
-    try {
-      final barcode = _resolveBarcode(card.barcodeFormat);
-      return BarcodeWidget(
-        data: card.barcodeValue,
-        barcode: barcode,
-        drawText: true,
-        errorBuilder: (context, error) => Center(child: Text('條碼錯誤: $error')),
-      );
-    } catch (e) {
-      return Center(child: Text('顯示失敗: $e'));
-    }
-  }
-
-  Barcode _resolveBarcode(BarcodeFormatType format) {
-    switch (format) {
-      case BarcodeFormatType.qr: return Barcode.qrCode();
-      case BarcodeFormatType.dataMatrix: return Barcode.dataMatrix();
-      case BarcodeFormatType.aztec: return Barcode.aztec();
-      case BarcodeFormatType.pdf417: return Barcode.pdf417();
-      case BarcodeFormatType.ean13: return Barcode.ean13();
-      case BarcodeFormatType.ean8: return Barcode.ean8();
-      case BarcodeFormatType.code128: return Barcode.code128();
-      case BarcodeFormatType.code39: return Barcode.code39();
-      case BarcodeFormatType.itf: return Barcode.itf();
-      case BarcodeFormatType.upca: return Barcode.upcA();
-      case BarcodeFormatType.upce: return Barcode.upcE();
-      case BarcodeFormatType.codabar: return Barcode.codabar();
-      default: return Barcode.code128();
-    }
   }
 }

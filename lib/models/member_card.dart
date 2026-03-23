@@ -38,7 +38,15 @@ class GpsZone extends HiveObject {
     this.radiusMeters = 100.0,
     this.label,
   });
+
+  @override
+  String toString() {
+    final labelStr = label != null ? ', label: $label' : '';
+    return 'GpsZone(lat: $latitude, lng: $longitude, radius: $radiusMeters$labelStr)';
+  }
 }
+
+const _sentinel = Object();
 
 /// 會員卡主資料模型
 @HiveType(typeId: 0)
@@ -76,8 +84,8 @@ class MemberCard extends HiveObject {
     String? storeName,
     String? barcodeValue,
     BarcodeFormatType? barcodeFormat,
-    String? cardColor,
-    String? iconPath,
+    Object? cardColor = _sentinel,
+    Object? iconPath = _sentinel,
     int? sortOrder,
     List<String>? ssidKeywords,
     List<GpsZone>? gpsZones,
@@ -87,8 +95,8 @@ class MemberCard extends HiveObject {
       storeName: storeName ?? this.storeName,
       barcodeValue: barcodeValue ?? this.barcodeValue,
       barcodeFormat: barcodeFormat ?? this.barcodeFormat,
-      cardColor: cardColor ?? this.cardColor,
-      iconPath: iconPath ?? this.iconPath,
+      cardColor: cardColor == _sentinel ? this.cardColor : cardColor as String?,
+      iconPath: iconPath == _sentinel ? this.iconPath : iconPath as String?,
       sortOrder: sortOrder ?? this.sortOrder,
       ssidKeywords: ssidKeywords ?? List.from(this.ssidKeywords),
       gpsZones: gpsZones ?? List.from(this.gpsZones),

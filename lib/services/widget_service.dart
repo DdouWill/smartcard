@@ -25,7 +25,7 @@ class WidgetService {
 
   // Android Widget Provider 類別名稱（對應 SmartCardWidgetProvider.kt）
   static const String _widgetProviderClass =
-      'com.example.smartcard.SmartCardWidgetProvider';
+      'SmartCardWidgetProvider';
 
   // ──────────────────────────────────────────
   // 初始化

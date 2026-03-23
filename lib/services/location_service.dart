@@ -44,7 +44,7 @@ class LocationService {
   LocationService._internal();
 
   final NetworkInfo _networkInfo = NetworkInfo();
-  static const _channel = MethodChannel('com.example.smartcard/location_service');
+  static const _channel = MethodChannel('com.ddouwill.smartcard/location_service');
 
   // ──────────────────────────────────────────
   // 啟動 / 停止 背景服務

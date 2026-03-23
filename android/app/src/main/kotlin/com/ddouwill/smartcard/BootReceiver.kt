@@ -1,4 +1,4 @@
-package com.example.smartcard
+package com.ddouwill.smartcard
 
 import android.content.BroadcastReceiver
 import android.content.Context

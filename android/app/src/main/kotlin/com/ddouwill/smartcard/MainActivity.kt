@@ -1,4 +1,4 @@
-package com.example.smartcard
+package com.ddouwill.smartcard
 
 import android.content.Intent
 import android.os.Build
@@ -13,7 +13,7 @@ import io.flutter.plugin.common.MethodChannel
  * 實作 MethodChannel 以控制背景定位服務。
  */
 class MainActivity : FlutterActivity() {
-    private val CHANNEL = "com.example.smartcard/location_service"
+    private val CHANNEL = "com.ddouwill.smartcard/location_service"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)

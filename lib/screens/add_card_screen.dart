@@ -28,6 +28,40 @@ class AddCardScreen extends StatefulWidget {
   State<AddCardScreen> createState() => _AddCardScreenState();
 }
 
+// 台灣常見連鎖店家（用於自動補全）
+const _commonStores = [
+  '全聯福利中心',
+  '家樂福',
+  '大潤發',
+  '好市多 Costco',
+  '屈臣氏',
+  '康是美',
+  '寶雅',
+  '小北百貨',
+  '統一超商 7-ELEVEN',
+  '全家便利商店',
+  '萊爾富',
+  'OK 超商',
+  '星巴克',
+  '路易莎咖啡',
+  '摩斯漢堡',
+  '麥當勞',
+  '肯德基',
+  '丹丹漢堡',
+  '鼎泰豐',
+  '誠品書店',
+  '光南大批發',
+  '無印良品 MUJI',
+  'UNIQLO',
+  'NET',
+  '愛買',
+  '美廉社',
+  '頂好超市',
+  '全國電子',
+  '燦坤',
+  'IKEA',
+];
+
 class _AddCardScreenState extends State<AddCardScreen>
     with SingleTickerProviderStateMixin {
   /// 使用 AppController 取代直接呼叫 DatabaseService
@@ -260,18 +294,43 @@ class _AddCardScreenState extends State<AddCardScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 店家名稱輸入
-          TextFormField(
-            controller: _storeNameController,
-            decoration: const InputDecoration(
-              labelText: '店家名稱 *',
-              hintText: '例：全聯福利中心',
-              prefixIcon: Icon(Icons.store),
-              border: OutlineInputBorder(),
-            ),
-            textInputAction: TextInputAction.next,
-            validator: (v) =>
-                (v?.trim().isEmpty ?? true) ? '請輸入店家名稱' : null,
+          // 店家名稱輸入（帶自動補全常見店家）
+          Autocomplete<String>(
+            optionsBuilder: (textEditingValue) {
+              if (textEditingValue.text.isEmpty) return const [];
+              final query = textEditingValue.text.toLowerCase();
+              return _commonStores.where(
+                (store) => store.toLowerCase().contains(query),
+              );
+            },
+            onSelected: (selection) {
+              _storeNameController.text = selection;
+            },
+            fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+              // Sync the autocomplete controller with our form controller
+              if (controller.text != _storeNameController.text) {
+                controller.text = _storeNameController.text;
+              }
+              controller.addListener(() {
+                if (_storeNameController.text != controller.text) {
+                  _storeNameController.text = controller.text;
+                }
+              });
+              return TextFormField(
+                controller: controller,
+                focusNode: focusNode,
+                decoration: const InputDecoration(
+                  labelText: '店家名稱 *',
+                  hintText: '例：全聯福利中心',
+                  prefixIcon: Icon(Icons.store),
+                  border: OutlineInputBorder(),
+                ),
+                textInputAction: TextInputAction.next,
+                onFieldSubmitted: (_) => onSubmitted(),
+                validator: (v) =>
+                    (v?.trim().isEmpty ?? true) ? '請輸入店家名稱' : null,
+              );
+            },
           ),
           const SizedBox(height: 16),
 

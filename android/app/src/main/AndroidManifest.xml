@@ -46,7 +46,7 @@
             android:label="SmartCard Widget">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.example.smartcard.WIDGET_CLICK" />
+                <action android:name="com.ddouwill.smartcard.WIDGET_CLICK" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
