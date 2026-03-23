@@ -10,6 +10,7 @@
 // ============================================================
 
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../models/member_card.dart';
 import '../services/location_service.dart';
@@ -81,33 +82,52 @@ class LocationStatusCard extends StatelessWidget {
   // ──────────────────────────────────────────
 
   Widget _buildDetectingCard(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.location_searching,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 18,
+      child: Shimmer.fromColors(
+        baseColor: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+        highlightColor: isDark ? Colors.grey[500]! : Colors.grey[100]!,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.location_searching,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '正在偵測附近店家...',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Shimmer placeholder bars
+              Container(
+                width: double.infinity,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(4),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  '正在偵測附近店家...',
-                  style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 8),
+              Container(
+                width: 160,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(4),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // 進度條
-            LinearProgressIndicator(
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
