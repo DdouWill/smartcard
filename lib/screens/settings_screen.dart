@@ -6,10 +6,15 @@
 // 資料管理（清除所有卡片）、關於 App（版本號）。
 // ============================================================
 
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../app_controller.dart';
 import '../models/app_settings.dart';
+import '../services/backup_service.dart';
 
 /// 設定頁
 ///
@@ -109,15 +114,13 @@ class SettingsScreen extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.backup_outlined),
                 title: const Text('匯出加密備份'),
-                subtitle: const Text('將所有卡片匯出為加密檔案'),
+                subtitle: Text(
+                  '將所有卡片匯出為加密檔案（${controller.cards.length} 張）',
+                ),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('匯出功能將在 Phase 3 實作'),
-                    ),
-                  );
-                },
+                onTap: controller.cards.isEmpty
+                    ? null
+                    : () => _handleExportBackup(context),
               ),
 
               // 匯入備份
@@ -126,13 +129,7 @@ class SettingsScreen extends StatelessWidget {
                 title: const Text('匯入備份'),
                 subtitle: const Text('從加密備份檔案還原卡片'),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('匯入功能將在 Phase 3 實作'),
-                    ),
-                  );
-                },
+                onTap: () => _handleImportBackup(context, controller),
               ),
 
               const Divider(),
@@ -177,6 +174,233 @@ class SettingsScreen extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+
+  // ──────────────────────────────────────────
+  // 匯出加密備份
+  // ──────────────────────────────────────────
+
+  Future<void> _handleExportBackup(BuildContext context) async {
+    final password = await _showPasswordDialog(
+      context,
+      title: '設定備份密碼',
+      confirmPassword: true,
+    );
+    if (password == null || !context.mounted) return;
+
+    // 顯示載入中
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final backupService = BackupService();
+      final file = await backupService.exportBackup(password);
+
+      if (!context.mounted) return;
+      Navigator.pop(context); // 關閉載入
+
+      // 分享檔案
+      await Share.shareXFiles(
+        [XFile(file.path)],
+      );
+    } on BackupException catch (e) {
+      if (!context.mounted) return;
+      Navigator.pop(context);
+      _showErrorSnackBar(context, e.message);
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.pop(context);
+      _showErrorSnackBar(context, '匯出失敗：$e');
+    }
+  }
+
+  // ──────────────────────────────────────────
+  // 匯入加密備份
+  // ──────────────────────────────────────────
+
+  Future<void> _handleImportBackup(
+    BuildContext context,
+    AppController controller,
+  ) async {
+    // 選擇檔案
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.any,
+    );
+    if (result == null || result.files.single.path == null) return;
+    if (!context.mounted) return;
+
+    final filePath = result.files.single.path!;
+    final file = File(filePath);
+
+    // 輸入密碼
+    final password = await _showPasswordDialog(
+      context,
+      title: '輸入備份密碼',
+      confirmPassword: false,
+    );
+    if (password == null || !context.mounted) return;
+
+    // 選擇合併或覆蓋
+    final merge = await _showMergeOrReplaceDialog(context);
+    if (merge == null || !context.mounted) return;
+
+    // 顯示載入中
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final backupService = BackupService();
+      final importResult = await backupService.importBackup(
+        file,
+        password,
+        merge: merge,
+      );
+
+      if (!context.mounted) return;
+      Navigator.pop(context); // 關閉載入
+
+      // 重新整理卡片列表
+      await controller.initialize();
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '匯入完成：新增 ${importResult.imported} 張、跳過 ${importResult.skipped} 張',
+          ),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } on BackupException catch (e) {
+      if (!context.mounted) return;
+      Navigator.pop(context);
+      _showErrorSnackBar(context, e.message);
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.pop(context);
+      _showErrorSnackBar(context, '匯入失敗：$e');
+    }
+  }
+
+  // ──────────────────────────────────────────
+  // 密碼輸入對話框
+  // ──────────────────────────────────────────
+
+  Future<String?> _showPasswordDialog(
+    BuildContext context, {
+    required String title,
+    required bool confirmPassword,
+  }) async {
+    final passwordController = TextEditingController();
+    final confirmController = TextEditingController();
+    String? errorText;
+
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: Text(title),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: '密碼',
+                  hintText: '請輸入備份密碼',
+                  errorText: errorText,
+                ),
+                autofocus: true,
+              ),
+              if (confirmPassword) ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: confirmController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: '確認密碼',
+                    hintText: '再次輸入密碼',
+                  ),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final pw = passwordController.text;
+
+                if (pw.isEmpty) {
+                  setState(() => errorText = '請輸入密碼');
+                  return;
+                }
+                if (pw.length < 4) {
+                  setState(() => errorText = '密碼至少需要 4 個字元');
+                  return;
+                }
+                if (confirmPassword && pw != confirmController.text) {
+                  setState(() => errorText = '兩次輸入的密碼不一致');
+                  return;
+                }
+
+                Navigator.pop(ctx, pw);
+              },
+              child: const Text('確定'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ──────────────────────────────────────────
+  // 合併或覆蓋選擇對話框
+  // ──────────────────────────────────────────
+
+  Future<bool?> _showMergeOrReplaceDialog(BuildContext context) async {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('匯入方式'),
+        content: const Text('請選擇匯入方式：\n\n'
+            '合併：保留現有卡片，只匯入新的卡片\n'
+            '覆蓋：清除所有現有卡片，以備份內容取代'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          OutlinedButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('覆蓋'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('合併'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Theme.of(context).colorScheme.error,
       ),
     );
   }

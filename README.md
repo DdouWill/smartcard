@@ -41,7 +41,8 @@ lib/
 │   ├── database_service.dart # Hive 加密資料庫
 │   ├── barcode_service.dart  # 條碼掃描 / 辨識
 │   ├── location_service.dart # WiFi + GPS 偵測引擎
-│   └── widget_service.dart   # Android Widget 通訊
+│   ├── widget_service.dart   # Android Widget 通訊
+│   └── backup_service.dart  # 加密備份匯出/匯入
 ├── screens/
 │   ├── home_screen.dart      # 主畫面（卡片列表 + 偵測狀態）
 │   ├── add_card_screen.dart  # 新增卡片（含店家自動補全）
@@ -52,7 +53,8 @@ lib/
     ├── barcode_display_widget.dart # 條碼顯示元件
     ├── location_status_card.dart  # 偵測狀態卡片（含 shimmer）
     ├── store_color_picker.dart    # 自訂顏色選擇器
-    └── ssid_keyword_editor.dart   # WiFi 關鍵字編輯器
+    ├── ssid_keyword_editor.dart   # WiFi 關鍵字編輯器
+    └── gps_zone_editor.dart       # GPS 圍欄區域編輯器
 ```
 
 ## 開發
@@ -90,7 +92,13 @@ flutter run
 
 - [x] **Phase 1** — 架構 + 核心邏輯（資料模型、DB、條碼、偵測、Widget 架構）
 - [x] **Phase 2** — UI 設計（HomeScreen、CardDetailScreen、AddCardScreen、SettingsScreen）
-- [ ] **Phase 3** — 整合 + Debug
+- [x] **Phase 3** — 整合 + Debug
+  - 相機即時掃描條碼（mobile_scanner）
+  - 卡片編輯（店名、條碼、顏色、WiFi、GPS）
+  - GPS 圍欄 UI（新增/編輯/刪除地理區域）
+  - 桌面小工具資料流驗證（LocationService → WidgetService → Kotlin Provider）
+  - 加密備份匯出/匯入（AES-256-CBC + PBKDF2，支援合併或取代）
+  - E2E 測試擴充（8 個整合測試覆蓋主要使用流程）
 
 ## 權限說明
 
