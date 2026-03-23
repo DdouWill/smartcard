@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 
 import '../models/member_card.dart';
 import '../services/location_service.dart';
+import '../utils/color_utils.dart';
 import 'barcode_display_widget.dart';
 
 /// 定位狀態卡片
@@ -146,7 +147,7 @@ class LocationStatusCard extends StatelessWidget {
   // ──────────────────────────────────────────
 
   Widget _buildSingleMatchCard(BuildContext context, MemberCard card) {
-    final cardColor = _parseColor(card.cardColor) ??
+    final cardColor = parseHexColor(card.cardColor) ??
         Theme.of(context).colorScheme.primaryContainer;
 
     return Card(
@@ -272,7 +273,7 @@ class LocationStatusCard extends StatelessWidget {
                 itemCount: cards.length,
                 itemBuilder: (context, index) {
                   final card = cards[index];
-                  final color = _parseColor(card.cardColor) ??
+                  final color = parseHexColor(card.cardColor) ??
                       Theme.of(context).colorScheme.primaryContainer;
 
                   return Padding(
@@ -361,7 +362,7 @@ class LocationStatusCard extends StatelessWidget {
 
     // 顯示最近使用卡片（半透明）
     final card = recentCard!;
-    final cardColor = _parseColor(card.cardColor) ??
+    final cardColor = parseHexColor(card.cardColor) ??
         Theme.of(context).colorScheme.primaryContainer;
 
     return Opacity(
@@ -421,15 +422,4 @@ class LocationStatusCard extends StatelessWidget {
     );
   }
 
-  /// 解析 hex 顏色字串
-  Color? _parseColor(String? hex) {
-    if (hex == null || hex.isEmpty) return null;
-    try {
-      final cleaned = hex.replaceAll('#', '');
-      final withAlpha = cleaned.length == 6 ? 'FF$cleaned' : cleaned;
-      return Color(int.parse(withAlpha, radix: 16));
-    } catch (_) {
-      return null;
-    }
-  }
 }

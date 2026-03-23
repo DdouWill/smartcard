@@ -8,6 +8,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/member_card.dart';
+import '../utils/color_utils.dart';
 import 'barcode_display_widget.dart';
 
 /// 卡片列表項目
@@ -44,7 +45,7 @@ class CardWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 解析卡片自訂顏色
-    final cardColor = _parseColor(card.cardColor) ??
+    final cardColor = parseHexColor(card.cardColor) ??
         Theme.of(context).colorScheme.primaryContainer;
 
     return Dismissible(
@@ -309,16 +310,4 @@ class CardWidget extends StatelessWidget {
     );
   }
 
-  /// 解析 hex 顏色字串
-  /// 支援 #RGB / #RRGGBB / #AARRGGBB 格式
-  Color? _parseColor(String? hex) {
-    if (hex == null || hex.isEmpty) return null;
-    try {
-      final cleaned = hex.replaceAll('#', '');
-      final withAlpha = cleaned.length == 6 ? 'FF$cleaned' : cleaned;
-      return Color(int.parse(withAlpha, radix: 16));
-    } catch (_) {
-      return null;
-    }
-  }
 }
