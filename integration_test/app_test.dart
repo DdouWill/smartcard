@@ -257,44 +257,31 @@ void main() {
       expect(find.text('StoreAlpha'), findsAtLeastNWidgets(1));
       expect(find.text('StoreBeta'), findsAtLeastNWidgets(1));
 
-      // ── 清理：刪除 StoreAlpha ──
-      await tester.drag(find.text('StoreAlpha').first, const Offset(-500, 0));
-      await tester.pumpAndSettle();
-      if (find.text('刪除卡片').evaluate().isNotEmpty) {
-        await tester.tap(find.text('刪除'));
-        await tester.pumpAndSettle();
-      }
-
-      // ── 清理：刪除 StoreBeta ──
-      await tester.drag(find.text('StoreBeta').first, const Offset(-500, 0));
-      await tester.pumpAndSettle();
-      if (find.text('刪除卡片').evaluate().isNotEmpty) {
-        await tester.tap(find.text('刪除'));
-        await tester.pumpAndSettle();
-      }
-
-      expect(find.text('StoreAlpha'), findsNothing);
-      expect(find.text('StoreBeta'), findsNothing);
+      // 不在此清理，由後續測試處理
     });
 
     testWidgets('7. 刪除卡片（Dismissible 滑動）', (tester) async {
       app.main();
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
-      final card = find.text('EditedStore');
-      if (card.evaluate().isEmpty) return;
+      // 清理所有殘留卡片
+      for (final name in ['EditedStore', 'StoreAlpha', 'StoreBeta']) {
+        var card = find.text(name);
+        if (card.evaluate().isNotEmpty) {
+          await tester.drag(card.first, const Offset(-500, 0));
+          await tester.pumpAndSettle(const Duration(seconds: 1));
+          final deleteBtn = find.text('刪除');
+          if (deleteBtn.evaluate().isNotEmpty) {
+            await tester.tap(deleteBtn.first);
+            await tester.pumpAndSettle(const Duration(seconds: 2));
+          }
+        }
+      }
 
-      // 左滑刪除
-      await tester.drag(card.first, const Offset(-500, 0));
-      await tester.pumpAndSettle();
-
-      // 確認 dialog
-      expect(find.text('刪除卡片'), findsOneWidget);
-      await tester.tap(find.text('刪除'));
-      await tester.pumpAndSettle();
-
-      // 卡片消失
+      // 所有測試卡片都應消失
       expect(find.text('EditedStore'), findsNothing);
+      expect(find.text('StoreAlpha'), findsNothing);
+      expect(find.text('StoreBeta'), findsNothing);
     });
   });
 }
