@@ -133,7 +133,7 @@ class _AddCardScreenState extends State<AddCardScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(_isEditing ? '編輯會員卡' : '新增會員卡'),
+        title: Text(_isEditing ? '編輯會員卡' : '新增會員卡'),
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -608,7 +608,7 @@ class _AddCardScreenState extends State<AddCardScreen>
         child: FilledButton.icon(
           onPressed: _isProcessing ? null : _saveCard,
           icon: const Icon(Icons.save),
-          label: const Text(_isEditing ? '更新卡片' : '儲存卡片'),
+          label: Text(_isEditing ? '更新卡片' : '儲存卡片'),
         ),
       ),
     );
