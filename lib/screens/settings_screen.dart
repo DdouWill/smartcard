@@ -205,8 +205,8 @@ class SettingsScreen extends StatelessWidget {
       Navigator.pop(context); // 關閉載入
 
       // 分享檔案
-      await SharePlus.instance.share(
-        ShareParams(files: [XFile(file.path)]),
+      await Share.shareXFiles(
+        [XFile(file.path)],
       );
     } on BackupException catch (e) {
       if (!context.mounted) return;
