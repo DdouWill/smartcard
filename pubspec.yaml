@@ -24,6 +24,9 @@ dependencies:
   image_picker: ^1.1.2
   wakelock_plus: ^1.2.10
   shimmer: ^3.0.0
+  pointycastle: ^3.9.1
+  file_picker: ^8.1.6
+  share_plus: ^10.1.4
 
 dev_dependencies:
   flutter_test:
