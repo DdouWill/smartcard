@@ -1,4 +1,4 @@
-package com.example.smartcard
+package com.ddouwill.smartcard
 
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -28,7 +28,7 @@ import es.antonborri.home_widget.HomeWidgetPlugin
 class SmartCardWidgetProvider : AppWidgetProvider() {
 
     companion object {
-        const val ACTION_WIDGET_CLICK = "com.example.smartcard.WIDGET_CLICK"
+        const val ACTION_WIDGET_CLICK = "com.ddouwill.smartcard.WIDGET_CLICK"
         const val EXTRA_CARD_ID = "card_id"
 
         const val MODE_NO_MATCH = "noMatch"

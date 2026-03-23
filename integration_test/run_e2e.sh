@@ -2,7 +2,7 @@
 # SmartCard E2E Test Runner
 # 自動授權 → 跑測試 → 清理
 
-PACKAGE="com.example.smartcard"
+PACKAGE="com.ddouwill.smartcard"
 ADB="D:\Dev\AndroidSDK\platform-tools\adb"
 
 echo "=== 預授權 ==="

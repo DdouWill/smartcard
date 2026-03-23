@@ -21,5 +21,5 @@
 -keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
 
 # SmartCard 本體（Widget Provider 由系統反射呼叫）
--keep class com.example.smartcard.SmartCardWidgetProvider { *; }
--keep class com.example.smartcard.MainActivity { *; }
+-keep class com.ddouwill.smartcard.SmartCardWidgetProvider { *; }
+-keep class com.ddouwill.smartcard.MainActivity { *; }

@@ -1,4 +1,4 @@
-package com.example.smartcard
+package com.ddouwill.smartcard
 
 import android.app.*
 import android.content.Context
@@ -104,7 +104,7 @@ class LocationForegroundService : Service() {
         Log.d(TAG, "位置已更新: ${location.latitude}, ${location.longitude}")
         
         // 發送廣播給 Flutter (如果 App 在前台或 Engine 存活)
-        val intent = Intent("com.example.smartcard.LOCATION_UPDATE")
+        val intent = Intent("com.ddouwill.smartcard.LOCATION_UPDATE")
         intent.putExtra("latitude", location.latitude)
         intent.putExtra("longitude", location.longitude)
         sendBroadcast(intent)

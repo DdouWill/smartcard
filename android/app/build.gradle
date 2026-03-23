@@ -9,7 +9,7 @@ plugins {
 }
 
 android {
-    namespace "com.example.smartcard"
+    namespace "com.ddouwill.smartcard"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -23,7 +23,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.example.smartcard"
+        applicationId "com.ddouwill.smartcard"
         // 最低 API 24（Android 7.0）
         // 原因：network_info_plus 讀取 WiFi SSID 需要 API 26+；
         //       ACCESS_BACKGROUND_LOCATION 需要 API 29+；
