@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 import 'package:image_picker/image_picker.dart' show ImagePicker, ImageSource;
+import 'package:mobile_scanner/mobile_scanner.dart' as ms;
 
 import '../app_controller.dart';
 import '../models/member_card.dart';
@@ -121,6 +122,7 @@ class _AddCardScreenState extends State<AddCardScreen>
 
   @override
   void dispose() {
+    _scannerController?.dispose();
     _tabController.dispose();
     _storeNameController.dispose();
     _barcodeValueController.dispose();
@@ -172,50 +174,119 @@ class _AddCardScreenState extends State<AddCardScreen>
   // Tab 1：相機掃描
   // ──────────────────────────────────────────
 
+  ms.MobileScannerController? _scannerController;
+  bool _scannerPaused = false;
+
   Widget _buildCameraScanTab() {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // 相機預覽佔位
-          Container(
-            width: double.infinity,
-            height: 240,
-            decoration: BoxDecoration(
-              color: Colors.black87,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.camera_alt, color: Colors.white54, size: 64),
-                SizedBox(height: 8),
-                Text(
-                  '相機掃描',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white54),
-                ),
-              ],
-            ),
+    _scannerController ??= ms.MobileScannerController(
+      detectionSpeed: ms.DetectionSpeed.normal,
+      facing: ms.CameraFacing.back,
+      torchEnabled: false,
+    );
+
+    return Stack(
+      children: [
+        // 相機預覽
+        ms.MobileScanner(
+          controller: _scannerController!,
+          onDetect: _onBarcodeDetected,
+        ),
+        // 掃描框 overlay
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.white54, width: 1),
           ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: _isProcessing ? null : _startCameraScanner,
-            icon: const Icon(Icons.camera),
-            label: const Text('開啟相機掃描'),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '對準實體會員卡的條碼，自動辨識後填入',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
+        ),
+        // 頂部工具列
+        Positioned(
+          top: 16,
+          right: 16,
+          child: Row(
+            children: [
+              // 手電筒
+              IconButton(
+                icon: Icon(
+                  _scannerController!.torchEnabled ? Icons.flash_on : Icons.flash_off,
+                  color: Colors.white,
                 ),
+                onPressed: () => _scannerController!.toggleTorch(),
+              ),
+              // 切換前後鏡頭
+              IconButton(
+                icon: const Icon(Icons.cameraswitch, color: Colors.white),
+                onPressed: () => _scannerController!.switchCamera(),
+              ),
+            ],
+          ),
+        ),
+        // 底部提示
+        Positioned(
+          bottom: 24,
+          left: 24,
+          right: 24,
+          child: Text(
+            _scannerPaused ? '已偵測到條碼' : '對準條碼自動掃描',
             textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              shadows: [Shadow(blurRadius: 8, color: Colors.black)],
+            ),
           ),
-        ],
+        ),
+      ],
+    );
+  }
+
+  void _onBarcodeDetected(ms.BarcodeCapture capture) {
+    if (_scannerPaused) return;
+    final barcode = capture.barcodes.firstOrNull;
+    if (barcode == null || barcode.rawValue == null) return;
+
+    setState(() => _scannerPaused = true);
+    _scannerController?.stop();
+
+    final value = barcode.rawValue!;
+    final format = _msFormatToLocal(barcode.format);
+
+    // 預填到表單
+    _barcodeValueController.text = value;
+    _scannedValue = value;
+    _scannedFormat = format;
+    _selectedFormat = format;
+
+    // 顯示結果 + 跳到手動輸入完善資料
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('偵測到條碼：$value'),
+        action: SnackBarAction(
+          label: '重新掃描',
+          onPressed: _resumeScanner,
+        ),
       ),
     );
+
+    // 切到手動輸入 Tab 讓使用者填店名
+    _tabController.animateTo(2);
+  }
+
+  void _resumeScanner() {
+    setState(() => _scannerPaused = false);
+    _scannerController?.start();
+  }
+
+  BarcodeFormatType _msFormatToLocal(ms.BarcodeFormat format) {
+    switch (format) {
+      case ms.BarcodeFormat.ean13: return BarcodeFormatType.ean13;
+      case ms.BarcodeFormat.ean8: return BarcodeFormatType.ean8;
+      case ms.BarcodeFormat.qrCode: return BarcodeFormatType.qr;
+      case ms.BarcodeFormat.code128: return BarcodeFormatType.code128;
+      case ms.BarcodeFormat.code39: return BarcodeFormatType.code39;
+      case ms.BarcodeFormat.pdf417: return BarcodeFormatType.pdf417;
+      case ms.BarcodeFormat.dataMatrix: return BarcodeFormatType.dataMatrix;
+      case ms.BarcodeFormat.aztec: return BarcodeFormatType.aztec;
+      default: return BarcodeFormatType.code128;
+    }
   }
 
   // ──────────────────────────────────────────
@@ -547,11 +618,9 @@ class _AddCardScreenState extends State<AddCardScreen>
   // 動作處理
   // ──────────────────────────────────────────
 
-  /// 開啟相機掃描
+  /// 開啟相機掃描（已由即時預覽取代，保留方法避免引用錯誤）
   Future<void> _startCameraScanner() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('相機掃描功能開發中')),
-    );
+    _tabController.animateTo(0); // 切回掃描 Tab
   }
 
   /// 從相簿選取圖片
