@@ -51,7 +51,7 @@ void main() {
       final barcodeField = find.widgetWithText(TextFormField, '條碼號碼 *');
       await tester.ensureVisible(barcodeField);
       await tester.pumpAndSettle();
-      await tester.enterText(barcodeField, '4710088020019');
+      await tester.enterText(barcodeField, '4710088020017');
       await tester.pumpAndSettle();
 
       // 預覽條碼應該出現
@@ -80,7 +80,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // 詳情頁顯示條碼
-      expect(find.text('4710088020019'), findsOneWidget);
+      expect(find.text('4710088020017'), findsOneWidget);
     });
 
     testWidgets('4. 設定頁面', (tester) async {
