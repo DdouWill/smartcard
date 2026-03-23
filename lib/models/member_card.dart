@@ -6,6 +6,8 @@ import 'package:hive/hive.dart';
 
 part 'member_card.g.dart';
 
+const _sentinel = Object();
+
 /// 支援的條碼格式類型
 @HiveType(typeId: 2)
 enum BarcodeFormatType {
@@ -76,8 +78,8 @@ class MemberCard extends HiveObject {
     String? storeName,
     String? barcodeValue,
     BarcodeFormatType? barcodeFormat,
-    String? cardColor,
-    String? iconPath,
+    Object? cardColor = _sentinel,
+    Object? iconPath = _sentinel,
     int? sortOrder,
     List<String>? ssidKeywords,
     List<GpsZone>? gpsZones,
@@ -87,8 +89,8 @@ class MemberCard extends HiveObject {
       storeName: storeName ?? this.storeName,
       barcodeValue: barcodeValue ?? this.barcodeValue,
       barcodeFormat: barcodeFormat ?? this.barcodeFormat,
-      cardColor: cardColor ?? this.cardColor,
-      iconPath: iconPath ?? this.iconPath,
+      cardColor: cardColor == _sentinel ? this.cardColor : cardColor as String?,
+      iconPath: iconPath == _sentinel ? this.iconPath : iconPath as String?,
       sortOrder: sortOrder ?? this.sortOrder,
       ssidKeywords: ssidKeywords ?? List.from(this.ssidKeywords),
       gpsZones: gpsZones ?? List.from(this.gpsZones),
