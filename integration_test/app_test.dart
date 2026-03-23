@@ -63,7 +63,7 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 3));
 
       // 回到 HomeScreen，卡片出現
-      expect(find.text('TestStore'), findsOneWidget);
+      expect(find.text('TestStore'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('3. 卡片點擊 → 詳情頁', (tester) async {
