@@ -1,13 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/widget_root"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@drawable/widget_background"
     android:padding="12dp"
-    android:gravity="center_horizontal">
+    android:background="@android:color/white">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -18,8 +15,8 @@
 
         <ImageView
             android:id="@+id/widget_app_icon"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
             android:src="@mipmap/ic_launcher"
             android:contentDescription="SmartCard" />
 
@@ -28,21 +25,13 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="6dp"
+            android:layout_marginStart="8dp"
             android:text="SmartCard"
-            android:textSize="13sp"
-            android:textColor="#FFFFFF"
+            android:textSize="14sp"
             android:textStyle="bold"
-            android:ellipsize="end"
-            android:maxLines="1" />
-
-        <ImageView
-            android:id="@+id/widget_location_icon"
-            android:layout_width="16dp"
-            android:layout_height="16dp"
-            android:src="@android:drawable/ic_menu_mylocation"
-            android:contentDescription="定位狀態"
-            android:alpha="0.7" />
+            android:textColor="#333333"
+            android:maxLines="1"
+            android:ellipsize="end" />
     </LinearLayout>
 
     <ImageView
@@ -51,10 +40,8 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:scaleType="fitCenter"
-        android:contentDescription="條碼"
         android:visibility="gone"
-        android:background="#FFFFFF"
-        android:padding="4dp" />
+        android:contentDescription="條碼" />
 
     <LinearLayout
         android:id="@+id/widget_multi_card_container"
@@ -62,68 +49,25 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:orientation="vertical"
+        android:gravity="center"
         android:visibility="gone">
 
-        <Button
-            android:id="@+id/widget_card_btn_0"
-            style="@android:style/Widget.Material.Button.Borderless"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
-            android:visibility="gone" />
-
-        <Button
-            android:id="@+id/widget_card_btn_1"
-            style="@android:style/Widget.Material.Button.Borderless"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
-            android:visibility="gone" />
-
-        <Button
-            android:id="@+id/widget_card_btn_2"
-            style="@android:style/Widget.Material.Button.Borderless"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
-            android:visibility="gone" />
-
-        <Button
-            android:id="@+id/widget_card_btn_3"
-            style="@android:style/Widget.Material.Button.Borderless"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
-            android:visibility="gone" />
-
-        <Button
-            android:id="@+id/widget_card_btn_4"
-            style="@android:style/Widget.Material.Button.Borderless"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
-            android:visibility="gone" />
+        <Button android:id="@+id/widget_card_btn_0" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:visibility="gone" />
+        <Button android:id="@+id/widget_card_btn_1" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:visibility="gone" />
+        <Button android:id="@+id/widget_card_btn_2" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:visibility="gone" />
+        <Button android:id="@+id/widget_card_btn_3" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:visibility="gone" />
+        <Button android:id="@+id/widget_card_btn_4" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:visibility="gone" />
     </LinearLayout>
 
     <TextView
         android:id="@+id/widget_empty_text"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:gravity="center"
         android:text="點擊新增會員卡"
-        android:textColor="#AAFFFFFF"
-        android:textSize="12sp"
+        android:textSize="14sp"
+        android:textColor="#999999"
         android:visibility="gone" />
 
 </LinearLayout>
