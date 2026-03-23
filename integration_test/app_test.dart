@@ -207,6 +207,16 @@ void main() {
         await tester.pumpAndSettle(const Duration(seconds: 3));
       }
 
+      // 確保回到首頁
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+      // 如果還在 AddCardScreen 或 Detail，按返回
+      final backBtn = find.byTooltip('Back');
+      while (backBtn.evaluate().isNotEmpty) {
+        await tester.tap(backBtn.first);
+        await tester.pumpAndSettle(const Duration(seconds: 1));
+      }
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+
       expect(find.text('StoreAlpha'), findsAtLeastNWidgets(1));
 
       // ── 新增第二張卡片 ──
