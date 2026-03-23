@@ -63,9 +63,9 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 3));
 
       // 確認對話框
-      final confirmBtn = find.text('確認儲存');
+      final confirmBtn = find.widgetWithText(FilledButton, '確認儲存');
       if (confirmBtn.evaluate().isNotEmpty) {
-        await tester.tap(confirmBtn.first);
+        await tester.tap(confirmBtn);
         await tester.pumpAndSettle(const Duration(seconds: 3));
       }
 
@@ -128,9 +128,9 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 3));
 
       // 確認對話框
-      final confirmBtn = find.text('確認儲存');
+      final confirmBtn = find.widgetWithText(FilledButton, '確認儲存');
       if (confirmBtn.evaluate().isNotEmpty) {
-        await tester.tap(confirmBtn.first);
+        await tester.tap(confirmBtn);
         await tester.pumpAndSettle(const Duration(seconds: 3));
       }
 
@@ -201,9 +201,9 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 3));
 
       // 確認對話框
-      var confirmBtn = find.text('確認儲存');
+      var confirmBtn = find.widgetWithText(FilledButton, '確認儲存');
       if (confirmBtn.evaluate().isNotEmpty) {
-        await tester.tap(confirmBtn.first);
+        await tester.tap(confirmBtn);
         await tester.pumpAndSettle(const Duration(seconds: 3));
       }
 
@@ -237,8 +237,8 @@ void main() {
       final barcodeField2 = find.widgetWithText(TextFormField, '條碼號碼 *');
       await tester.ensureVisible(barcodeField2);
       await tester.pumpAndSettle();
-      // EAN-13: 8801234567891 (valid checksum)
-      await tester.enterText(barcodeField2, '8801234567891');
+      // EAN-13: 8801234567893 (valid checksum)
+      await tester.enterText(barcodeField2, '8801234567893');
       await tester.pumpAndSettle();
 
       final saveBtn2 = find.text('儲存卡片');
@@ -247,9 +247,9 @@ void main() {
       await tester.tap(saveBtn2);
       await tester.pumpAndSettle(const Duration(seconds: 3));
 
-      confirmBtn = find.text('確認儲存');
+      confirmBtn = find.widgetWithText(FilledButton, '確認儲存');
       if (confirmBtn.evaluate().isNotEmpty) {
-        await tester.tap(confirmBtn.first);
+        await tester.tap(confirmBtn);
         await tester.pumpAndSettle(const Duration(seconds: 3));
       }
 
