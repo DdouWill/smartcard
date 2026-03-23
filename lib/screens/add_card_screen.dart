@@ -22,7 +22,8 @@ import '../widgets/ssid_keyword_editor.dart';
 ///
 /// 提供三種條碼輸入方式，整合顏色選擇、SSID 關鍵字與條碼即時預覽。
 class AddCardScreen extends StatefulWidget {
-  const AddCardScreen({super.key});
+  final MemberCard? editingCard;
+  const AddCardScreen({super.key, this.editingCard});
 
   @override
   State<AddCardScreen> createState() => _AddCardScreenState();
@@ -90,6 +91,8 @@ class _AddCardScreenState extends State<AddCardScreen>
   // 即時條碼預覽觸發器
   String _previewBarcodeValue = '';
 
+  bool get _isEditing => widget.editingCard != null;
+
   @override
   void initState() {
     super.initState();
@@ -99,6 +102,21 @@ class _AddCardScreenState extends State<AddCardScreen>
     _barcodeValueController.addListener(() {
       setState(() => _previewBarcodeValue = _barcodeValueController.text.trim());
     });
+
+    // 編輯模式：預填現有卡片資料
+    if (_isEditing) {
+      final card = widget.editingCard!;
+      _storeNameController.text = card.storeName;
+      _barcodeValueController.text = card.barcodeValue;
+      _selectedFormat = card.barcodeFormat;
+      _selectedColor = card.cardColor != null
+          ? Color(int.parse(card.cardColor!.replaceFirst('#', 'FF'), radix: 16))
+          : null;
+      _ssidKeywords = List<String>.from(card.ssidKeywords);
+      _previewBarcodeValue = card.barcodeValue;
+      // 編輯模式直接跳到手動輸入 Tab
+      _tabController.index = 2;
+    }
   }
 
   @override
@@ -113,7 +131,7 @@ class _AddCardScreenState extends State<AddCardScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('新增會員卡'),
+        title: const Text(_isEditing ? '編輯會員卡' : '新增會員卡'),
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -519,7 +537,7 @@ class _AddCardScreenState extends State<AddCardScreen>
         child: FilledButton.icon(
           onPressed: _isProcessing ? null : _saveCard,
           icon: const Icon(Icons.save),
-          label: const Text('儲存卡片'),
+          label: const Text(_isEditing ? '更新卡片' : '儲存卡片'),
         ),
       ),
     );
@@ -644,18 +662,29 @@ class _AddCardScreenState extends State<AddCardScreen>
           ? '#${_selectedColor!.value.toRadixString(16).substring(2).toUpperCase()}'
           : null;
 
-      final newCard = MemberCard(
-        id: _uuid.v4(),
-        storeName: storeName,
-        barcodeValue: barcodeValue,
-        barcodeFormat: format,
-        cardColor: colorHex,
-        sortOrder: _controller.cards.length, // 新增到最後
-        ssidKeywords: _ssidKeywords,
-      );
-
-      // 使用 AppController 新增卡片（取代直接呼叫 DatabaseService）
-      await _controller.addCard(newCard);
+      if (_isEditing) {
+        // 編輯模式：更新現有卡片
+        final updatedCard = widget.editingCard!.copyWith(
+          storeName: storeName,
+          barcodeValue: barcodeValue,
+          barcodeFormat: format,
+          cardColor: colorHex,
+          ssidKeywords: _ssidKeywords,
+        );
+        await _controller.updateCard(updatedCard);
+      } else {
+        // 新增模式
+        final newCard = MemberCard(
+          id: _uuid.v4(),
+          storeName: storeName,
+          barcodeValue: barcodeValue,
+          barcodeFormat: format,
+          cardColor: colorHex,
+          sortOrder: _controller.cards.length,
+          ssidKeywords: _ssidKeywords,
+        );
+        await _controller.addCard(newCard);
+      }
 
       if (!mounted) return;
       Navigator.pop(context); // 返回主畫面

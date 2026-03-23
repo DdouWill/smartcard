@@ -15,6 +15,7 @@ class AppRouter {
   static const String home = '/';
   static const String cardDetail = '/card';
   static const String addCard = '/add-card';
+  static const String editCard = '/edit-card';
   static const String settings = '/settings';
 
   static Route<dynamic> onGenerateRoute(RouteSettings routeSettings) {
@@ -26,7 +27,14 @@ class AppRouter {
     }
 
     if (name == addCard) {
-      return _buildRoute(routeSettings, const AddCardScreen());
+      final editingCard = args is MemberCard ? args : null;
+      return _buildRoute(routeSettings, AddCardScreen(editingCard: editingCard));
+    }
+
+    if (name == editCard) {
+      if (args is MemberCard) {
+        return _buildRoute(routeSettings, AddCardScreen(editingCard: args));
+      }
     }
 
     if (name == settings) {
@@ -65,6 +73,10 @@ class AppRouter {
 
   static Future<void> pushAddCard(BuildContext context) {
     return Navigator.pushNamed(context, addCard);
+  }
+
+  static Future<void> pushEditCard(BuildContext context, {required MemberCard card}) {
+    return Navigator.pushNamed(context, editCard, arguments: card);
   }
 
   static Future<void> pushSettings(BuildContext context) {
