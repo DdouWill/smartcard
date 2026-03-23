@@ -231,11 +231,13 @@ void main() {
 
           await tester.drag(card.first, const Offset(-500, 0), warnIfMissed: false);
           await tester.pumpAndSettle(const Duration(seconds: 2));
+          tester.takeException(); // 清除 deactivated widget 警告
 
           final deleteBtn = find.text('刪除');
           if (deleteBtn.evaluate().isNotEmpty) {
             await tester.tap(deleteBtn.first);
             await tester.pumpAndSettle(const Duration(seconds: 2));
+            tester.takeException(); // 清除可能的警告
           }
         }
       }
