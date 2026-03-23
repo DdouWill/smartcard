@@ -205,6 +205,10 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
                 "PDF417" -> BarcodeFormat.PDF_417
                 "DATAMATRIX", "DATA_MATRIX" -> BarcodeFormat.DATA_MATRIX
                 "AZTEC" -> BarcodeFormat.AZTEC
+                "ITF", "ITF14", "ITF_14" -> BarcodeFormat.ITF
+                "UPCA", "UPC_A" -> BarcodeFormat.UPC_A
+                "UPCE", "UPC_E" -> BarcodeFormat.UPC_E
+                "CODABAR" -> BarcodeFormat.CODABAR
                 else -> BarcodeFormat.CODE_128
             }
             
