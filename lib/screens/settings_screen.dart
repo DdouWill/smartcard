@@ -105,6 +105,38 @@ class SettingsScreen extends StatelessWidget {
               // ── 資料管理區塊 ──
               _SectionHeader(title: '資料管理'),
 
+              // 匯出加密備份
+              ListTile(
+                leading: const Icon(Icons.backup_outlined),
+                title: const Text('匯出加密備份'),
+                subtitle: const Text('將所有卡片匯出為加密檔案'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('匯出功能將在 Phase 3 實作'),
+                    ),
+                  );
+                },
+              ),
+
+              // 匯入備份
+              ListTile(
+                leading: const Icon(Icons.restore),
+                title: const Text('匯入備份'),
+                subtitle: const Text('從加密備份檔案還原卡片'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('匯入功能將在 Phase 3 實作'),
+                    ),
+                  );
+                },
+              ),
+
+              const Divider(),
+
               // 清除所有卡片
               ListTile(
                 leading: Icon(
