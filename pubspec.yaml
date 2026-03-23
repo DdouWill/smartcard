@@ -23,6 +23,7 @@ dependencies:
   flutter_secure_storage: ^9.2.2
   image_picker: ^1.1.2
   wakelock_plus: ^1.2.10
+  shimmer: ^3.0.0
 
 dev_dependencies:
   flutter_test:
