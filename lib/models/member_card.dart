@@ -6,8 +6,6 @@ import 'package:hive/hive.dart';
 
 part 'member_card.g.dart';
 
-const _sentinel = Object();
-
 /// 支援的條碼格式類型
 @HiveType(typeId: 2)
 enum BarcodeFormatType {
@@ -40,7 +38,15 @@ class GpsZone extends HiveObject {
     this.radiusMeters = 100.0,
     this.label,
   });
+
+  @override
+  String toString() {
+    final labelStr = label != null ? ', label: $label' : '';
+    return 'GpsZone(lat: $latitude, lng: $longitude, radius: $radiusMeters$labelStr)';
+  }
 }
+
+const _sentinel = Object();
 
 /// 會員卡主資料模型
 @HiveType(typeId: 0)
