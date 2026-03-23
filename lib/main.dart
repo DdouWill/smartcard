@@ -1,0 +1,53 @@
+// SmartCard App 入口
+import 'package:flutter/material.dart';
+
+import 'app_controller.dart';
+import 'app_router.dart';
+import 'services/database_service.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 1. 初始化 Hive 加密資料庫 (含 KeyStore 金鑰處理)
+  await DatabaseService().initialize();
+
+  // 2. 初始化 AppController (載入卡片與設定，啟動計時器)
+  await AppController().initialize();
+
+  runApp(const SmartCardApp());
+}
+
+class SmartCardApp extends StatelessWidget {
+  const SmartCardApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'SmartCard 智慧會員卡',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF2196F3),
+          brightness: Brightness.light,
+        ),
+        useMaterial3: true,
+        cardTheme: const CardThemeData(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
+        ),
+      ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF2196F3),
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+      ),
+      themeMode: ThemeMode.system,
+      onGenerateRoute: AppRouter.onGenerateRoute,
+      initialRoute: AppRouter.home,
+    );
+  }
+}

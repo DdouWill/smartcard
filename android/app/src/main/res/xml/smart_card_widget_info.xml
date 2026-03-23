@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Widget Provider 設定檔
+  定義 Widget 的大小、更新間隔、預覽圖片等屬性
+  
+  Widget 最小尺寸：4x2 格（對應約 250x110dp）
+  Widget 更新間隔（毫秒）：home_widget 控制，這裡設 0 不自動更新
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="250dp"
+    android:minHeight="110dp"
+    android:resizeMode="horizontal|vertical"
+    android:minResizeWidth="180dp"
+    android:minResizeHeight="80dp"
+    android:updatePeriodMillis="0"
+    android:previewImage="@drawable/widget_preview"
+    android:initialLayout="@layout/smart_card_widget"
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable|configuration_optional"
+    android:description="@string/widget_description" />

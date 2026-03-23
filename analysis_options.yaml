@@ -1,0 +1,11 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # 強制使用 const（效能優化）
+    prefer_const_constructors: true
+    prefer_const_literals_to_create_immutables: true
+    # 避免 print（使用 debugPrint）
+    avoid_print: true
+    # 型別安全
+    always_declare_return_types: true

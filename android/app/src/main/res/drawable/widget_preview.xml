@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget 預覽圖（顯示在系統小工具選擇器中）
+     使用簡單的色塊作為預覽 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#2196F3" />
+    <corners android:radius="16dp" />
+</shape>

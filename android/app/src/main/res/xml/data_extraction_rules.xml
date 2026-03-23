@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ 資料備份規則
+     排除敏感資料（Hive 加密資料庫、AES 金鑰）不進行雲端備份
+     保護使用者的條碼隱私資料 -->
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- 排除 Hive 資料庫檔案（含加密金鑰，不應備份到雲端）-->
+        <exclude domain="file" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <!-- 裝置對裝置傳輸同樣排除（避免金鑰洩漏）-->
+        <exclude domain="file" path="." />
+    </device-transfer>
+</data-extraction-rules>

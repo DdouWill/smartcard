@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SmartCard</string>
+    <string name="widget_description">自動偵測附近店家並顯示對應會員卡條碼</string>
+</resources>

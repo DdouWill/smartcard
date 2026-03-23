@@ -1,0 +1,60 @@
+// App 模組 build.gradle
+// 定義 SmartCard App 的編譯與依賴設定
+
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    // Flutter Gradle Plugin 必須在 com.android.application 之後套用
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+android {
+    namespace "com.example.smartcard"
+    compileSdk = flutter.compileSdkVersion
+    ndkVersion = flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
+    defaultConfig {
+        applicationId "com.example.smartcard"
+        // 最低 API 24（Android 7.0）
+        // 原因：network_info_plus 讀取 WiFi SSID 需要 API 26+；
+        //       ACCESS_BACKGROUND_LOCATION 需要 API 29+；
+        //       設為 24 以確保核心定位功能穩定運作
+        minSdk = 24
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+    }
+
+    buildTypes {
+        release {
+            // 正式版使用 R8 混淆縮小 APK 大小
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
+                'proguard-rules.pro'
+            signingConfig signingConfigs.debug
+        }
+    }
+}
+
+flutter {
+    source '../..'
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+
+    // 定位相關
+    implementation 'com.google.android.gms:play-services-location:21.1.0'
+
+    // home_widget 需要此依賴
+    implementation 'androidx.work:work-runtime-ktx:2.9.0'
+}

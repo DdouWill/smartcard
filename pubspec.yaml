@@ -1,0 +1,35 @@
+name: smartcard
+description: 智慧會員卡錢包 - 完全離線、自動偵測店家、桌面小工具顯示條碼
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  home_widget: ^0.7.0
+  barcode_widget: ^2.0.4
+  google_mlkit_barcode_scanning: ^0.12.0
+  geolocator: ^13.0.2
+  network_info_plus: ^6.1.0
+  permission_handler: ^11.3.1
+  uuid: ^4.5.1
+  path_provider: ^2.1.5
+  flutter_secure_storage: ^9.2.2
+  image_picker: ^1.1.2
+  wakelock_plus: ^1.2.10
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.13
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
