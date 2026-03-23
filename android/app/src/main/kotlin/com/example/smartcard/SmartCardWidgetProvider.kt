@@ -5,9 +5,14 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.app.PendingIntent
+import android.graphics.Bitmap
+import android.graphics.Color
 import android.net.Uri
 import android.view.View
 import android.widget.RemoteViews
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.EncodeHintType
+import com.google.zxing.MultiFormatWriter
 import es.antonborri.home_widget.HomeWidgetPlugin
 
 /**
@@ -100,6 +105,15 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
             views.setViewVisibility(R.id.widget_multi_card_container, View.GONE)
             views.setViewVisibility(R.id.widget_empty_text, View.GONE)
 
+            val barcodeValue = widgetData.getString("primary_barcode_value", "") ?: ""
+            val barcodeFormat = widgetData.getString("primary_barcode_format", "CODE_128") ?: "CODE_128"
+            if (barcodeValue.isNotEmpty()) {
+                val bitmap = generateBarcodeBitmap(barcodeValue, barcodeFormat)
+                if (bitmap != null) {
+                    views.setImageViewBitmap(R.id.widget_barcode_image, bitmap)
+                }
+            }
+
             val clickIntent = createOpenAppIntent(context, cardId)
             views.setOnClickPendingIntent(R.id.widget_barcode_image, clickIntent)
         } else {
@@ -122,6 +136,16 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
         views.setViewVisibility(R.id.widget_empty_text, View.GONE)
 
         val cardId = widgetData.getString("primary_card_id", "") ?: ""
+        val barcodeValue = widgetData.getString("primary_barcode_value", "") ?: ""
+        val barcodeFormat = widgetData.getString("primary_barcode_format", "CODE_128") ?: "CODE_128"
+        
+        if (barcodeValue.isNotEmpty()) {
+            val bitmap = generateBarcodeBitmap(barcodeValue, barcodeFormat)
+            if (bitmap != null) {
+                views.setImageViewBitmap(R.id.widget_barcode_image, bitmap)
+            }
+        }
+
         val clickIntent = createOpenAppIntent(context, cardId)
         views.setOnClickPendingIntent(R.id.widget_barcode_image, clickIntent)
     }
@@ -158,6 +182,51 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
             } else {
                 views.setViewVisibility(buttonIds[i], View.GONE)
             }
+        }
+    }
+
+
+    /**
+     * 生成條碼 Bitmap
+     */
+    private fun generateBarcodeBitmap(
+        value: String,
+        formatStr: String,
+        width: Int = 600,
+        height: Int = 200
+    ): Bitmap? {
+        return try {
+            val format = when (formatStr.uppercase()) {
+                "QR", "QRCODE", "QR_CODE" -> BarcodeFormat.QR_CODE
+                "EAN13", "EAN_13" -> BarcodeFormat.EAN_13
+                "EAN8", "EAN_8" -> BarcodeFormat.EAN_8
+                "CODE128", "CODE_128" -> BarcodeFormat.CODE_128
+                "CODE39", "CODE_39" -> BarcodeFormat.CODE_39
+                "PDF417" -> BarcodeFormat.PDF_417
+                "DATAMATRIX", "DATA_MATRIX" -> BarcodeFormat.DATA_MATRIX
+                "AZTEC" -> BarcodeFormat.AZTEC
+                else -> BarcodeFormat.CODE_128
+            }
+            
+            val isSquare = format in listOf(
+                BarcodeFormat.QR_CODE, BarcodeFormat.DATA_MATRIX, BarcodeFormat.AZTEC
+            )
+            val w = if (isSquare) minOf(width, height) else width
+            val h = if (isSquare) minOf(width, height) else height
+            
+            val hints = mapOf(EncodeHintType.MARGIN to 1)
+            val bitMatrix = MultiFormatWriter().encode(value, format, w, h, hints)
+            
+            val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            for (x in 0 until w) {
+                for (y in 0 until h) {
+                    bitmap.setPixel(x, y, if (bitMatrix[x, y]) Color.BLACK else Color.WHITE)
+                }
+            }
+            bitmap
+        } catch (e: Exception) {
+            android.util.Log.e("SmartCardWidget", "條碼生成失敗: $e")
+            null
         }
     }
 
