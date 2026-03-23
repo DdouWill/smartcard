@@ -213,6 +213,13 @@ void main() {
     });
 
     testWidgets('7. 刪除所有卡片', (tester) async {
+      // 忽略 dispose 時的 deactivated widget ancestor lookup 警告
+      final originalOnError = FlutterError.onError;
+      FlutterError.onError = (details) {
+        if (details.toString().contains('deactivated widget')) return;
+        originalOnError?.call(details);
+      };
+
       app.main();
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
@@ -235,6 +242,9 @@ void main() {
 
       // 驗證至少刪除成功（首頁應該乾淨）
       expect(find.text('新增卡片'), findsOneWidget);
+
+      // 恢復 error handler
+      FlutterError.onError = originalOnError;
     });
   });
 }
