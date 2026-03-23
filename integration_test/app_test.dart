@@ -65,7 +65,7 @@ void main() {
       // 確認對話框
       final confirmBtn = find.text('確認儲存');
       if (confirmBtn.evaluate().isNotEmpty) {
-        await tester.tap(confirmBtn);
+        await tester.tap(confirmBtn.first);
         await tester.pumpAndSettle(const Duration(seconds: 3));
       }
 
@@ -130,7 +130,7 @@ void main() {
       // 確認對話框
       final confirmBtn = find.text('確認儲存');
       if (confirmBtn.evaluate().isNotEmpty) {
-        await tester.tap(confirmBtn);
+        await tester.tap(confirmBtn.first);
         await tester.pumpAndSettle(const Duration(seconds: 3));
       }
 
@@ -203,7 +203,7 @@ void main() {
       // 確認對話框
       var confirmBtn = find.text('確認儲存');
       if (confirmBtn.evaluate().isNotEmpty) {
-        await tester.tap(confirmBtn);
+        await tester.tap(confirmBtn.first);
         await tester.pumpAndSettle(const Duration(seconds: 3));
       }
 
@@ -239,7 +239,7 @@ void main() {
 
       confirmBtn = find.text('確認儲存');
       if (confirmBtn.evaluate().isNotEmpty) {
-        await tester.tap(confirmBtn);
+        await tester.tap(confirmBtn.first);
         await tester.pumpAndSettle(const Duration(seconds: 3));
       }
 
