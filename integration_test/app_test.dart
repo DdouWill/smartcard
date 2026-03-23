@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -8,20 +7,7 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('SmartCard E2E', () {
-    setUpAll(() async {
-      // 預授權：避免系統 permission dialog 擋住 Flutter UI
-      const grants = [
-        'android.permission.ACCESS_FINE_LOCATION',
-        'android.permission.ACCESS_COARSE_LOCATION',
-        'android.permission.CAMERA',
-        'android.permission.POST_NOTIFICATIONS',
-      ];
-      for (final perm in grants) {
-        await Process.run('adb', [
-          'shell', 'pm', 'grant', 'com.example.smartcard', perm,
-        ]);
-      }
-    });
+
     testWidgets('1. App 啟動 → HomeScreen', (tester) async {
       app.main();
       await tester.pumpAndSettle(const Duration(seconds: 5));
