@@ -18,6 +18,7 @@ import '../services/barcode_service.dart';
 import '../widgets/barcode_display_widget.dart';
 import '../widgets/store_color_picker.dart';
 import '../widgets/ssid_keyword_editor.dart';
+import '../widgets/gps_zone_editor.dart';
 
 /// 新增卡片頁面
 ///
@@ -85,6 +86,7 @@ class _AddCardScreenState extends State<AddCardScreen>
   BarcodeFormatType _selectedFormat = BarcodeFormatType.ean13;
   Color? _selectedColor; // 卡片背景色（null 表示使用預設）
   List<String> _ssidKeywords = []; // SSID 關鍵字清單
+  List<GpsZone> _gpsZones = []; // GPS 圍欄區域清單
   bool _isProcessing = false;
   String? _scannedValue; // 掃描結果暫存
   BarcodeFormatType? _scannedFormat; // 掃描格式暫存
@@ -114,6 +116,12 @@ class _AddCardScreenState extends State<AddCardScreen>
           ? Color(int.parse(card.cardColor!.replaceFirst('#', 'FF'), radix: 16))
           : null;
       _ssidKeywords = List<String>.from(card.ssidKeywords);
+      _gpsZones = card.gpsZones.map((z) => GpsZone(
+        latitude: z.latitude,
+        longitude: z.longitude,
+        radiusMeters: z.radiusMeters,
+        label: z.label,
+      )).toList();
       _previewBarcodeValue = card.barcodeValue;
       // 編輯模式直接跳到手動輸入 Tab
       _tabController.index = 2;
@@ -486,6 +494,14 @@ class _AddCardScreenState extends State<AddCardScreen>
           ),
           const SizedBox(height: 24),
 
+          // ── GPS 圍欄區域編輯器 ──
+          GpsZoneEditor(
+            zones: _gpsZones,
+            onZonesChanged: (updated) =>
+                setState(() => _gpsZones = updated),
+          ),
+          const SizedBox(height: 24),
+
           // 說明文字
           Container(
             padding: const EdgeInsets.all(12),
@@ -739,6 +755,7 @@ class _AddCardScreenState extends State<AddCardScreen>
           barcodeFormat: format,
           cardColor: colorHex,
           ssidKeywords: _ssidKeywords,
+          gpsZones: _gpsZones,
         );
         await _controller.updateCard(updatedCard);
       } else {
@@ -751,6 +768,7 @@ class _AddCardScreenState extends State<AddCardScreen>
           cardColor: colorHex,
           sortOrder: _controller.cards.length,
           ssidKeywords: _ssidKeywords,
+          gpsZones: _gpsZones,
         );
         await _controller.addCard(newCard);
       }
@@ -817,6 +835,15 @@ class _AddCardScreenState extends State<AddCardScreen>
                 const SizedBox(height: 12),
                 Text(
                   'WiFi 關鍵字：${_ssidKeywords.join(", ")}',
+                  style: Theme.of(ctx).textTheme.bodySmall,
+                ),
+              ],
+
+              // GPS 圍欄區域（若有）
+              if (_gpsZones.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'GPS 區域：${_gpsZones.length} 個',
                   style: Theme.of(ctx).textTheme.bodySmall,
                 ),
               ],
