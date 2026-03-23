@@ -45,10 +45,8 @@ class AppController extends ChangeNotifier {
       _initError = null;
       
       await startBackgroundUpdates();
-      debugPrint('[AppController] 初始化完成，共 ${_cards.length} 張卡片');
     } catch (e) {
       _initError = '初始化失敗：$e';
-      debugPrint('[AppController] 初始化錯誤：$e');
     }
   }
 
@@ -119,8 +117,7 @@ class AppController extends ChangeNotifier {
         matchedCards: result.matchedCards,
         recentCard: mostRecentCard,
       );
-    } catch (e) {
-      debugPrint('[AppController] 定位偵測錯誤：$e');
+    } catch (_) {
     } finally {
       _isDetecting = false;
       notifyListeners();
@@ -183,8 +180,7 @@ class AppController extends ChangeNotifier {
         matchedCards: validMatched,
         recentCard: mostRecentCard,
       );
-    } catch (e) {
-      debugPrint('[AppController] Widget 靜默更新失敗：$e');
+    } catch (_) {
     }
   }
 

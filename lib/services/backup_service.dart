@@ -7,7 +7,6 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pointycastle/export.dart';
 
@@ -69,7 +68,6 @@ class BackupService {
     final file = File('${dir.path}/smartcard_backup_$timestamp.smartcard-backup');
     await file.writeAsBytes(encrypted);
 
-    debugPrint('[BackupService] 已匯出 ${cards.length} 張卡片');
     return file;
   }
 
@@ -128,13 +126,11 @@ class BackupService {
 
         await _db.addCard(card);
         imported++;
-      } catch (e) {
-        debugPrint('[BackupService] 匯入卡片失敗，跳過: $e');
+      } catch (_) {
         skipped++;
       }
     }
 
-    debugPrint('[BackupService] 匯入完成: 匯入 $imported 張, 跳過 $skipped 張');
     return BackupImportResult(imported: imported, skipped: skipped);
   }
 

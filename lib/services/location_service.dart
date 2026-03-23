@@ -57,10 +57,8 @@ class LocationService {
         // 先請求通知權限（Android 13+）
         await requestNotificationPermission();
         await _channel.invokeMethod('startLocationService');
-        debugPrint('[LocationService] 已啟動背景定位服務');
       }
-    } catch (e) {
-      debugPrint('[LocationService] 啟動背景服務失敗：$e');
+    } catch (_) {
     }
   }
 
@@ -69,10 +67,8 @@ class LocationService {
     try {
       if (defaultTargetPlatform == TargetPlatform.android) {
         await _channel.invokeMethod('stopLocationService');
-        debugPrint('[LocationService] 已停止背景定位服務');
       }
-    } catch (e) {
-      debugPrint('[LocationService] 停止背景服務失敗：$e');
+    } catch (_) {
     }
   }
 
@@ -104,7 +100,6 @@ class LocationService {
     final now = DateTime.now();
     if (_lastResult != null && _lastUpdateTime != null) {
       if (now.difference(_lastUpdateTime!) < _debounceDuration) {
-        debugPrint('[LocationService] 觸發去抖動，延用上次結果');
         return _lastResult!;
       }
     }
@@ -115,8 +110,6 @@ class LocationService {
     if (enableWifi) {
       final wifiResult = await _matchByWifi(allCards);
       if (wifiResult.hasMatches) {
-        debugPrint('[LocationService] WiFi 匹配成功：'
-            '${wifiResult.matchedCards.length} 張卡片');
         result = wifiResult;
         return _updateLastResult(result);
       }
@@ -126,15 +119,12 @@ class LocationService {
     if (enableGps) {
       final gpsResult = await _matchByGps(allCards);
       if (gpsResult.hasMatches) {
-        debugPrint('[LocationService] GPS 匹配成功：'
-            '${gpsResult.matchedCards.length} 張卡片');
         result = gpsResult;
         return _updateLastResult(result);
       }
     }
 
     // ── Step 3：無符合 ──
-    debugPrint('[LocationService] 無符合位置，回傳空清單');
     result = const LocationResult(
       matchedCards: [],
       trigger: LocationTrigger.none,
@@ -160,15 +150,13 @@ class LocationService {
       // 需要位置權限才能讀取 SSID（Android 限制）
       final locationPermission = await Permission.location.status;
       if (!locationPermission.isGranted) {
-        debugPrint('[LocationService] 缺少位置權限，無法讀取 SSID');
         return null;
       }
 
       final ssid = await _networkInfo.getWifiName();
       // Android 回傳的 SSID 可能帶有引號，需去除
       return ssid?.replaceAll('"', '');
-    } catch (e) {
-      debugPrint('[LocationService] 讀取 SSID 失敗：$e');
+    } catch (_) {
       return null;
     }
   }
@@ -208,7 +196,6 @@ class LocationService {
       // 檢查位置服務是否啟用
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        debugPrint('[LocationService] 位置服務未啟用');
         return null;
       }
 
@@ -217,12 +204,10 @@ class LocationService {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          debugPrint('[LocationService] 位置權限被拒絕');
           return null;
         }
       }
       if (permission == LocationPermission.deniedForever) {
-        debugPrint('[LocationService] 位置權限永久拒絕，請到設定中開啟');
         return null;
       }
 
@@ -235,8 +220,7 @@ class LocationService {
           timeLimit: Duration(seconds: 10),
         ),
       );
-    } catch (e) {
-      debugPrint('[LocationService] GPS 定位失敗：$e');
+    } catch (_) {
       return null;
     }
   }
@@ -318,14 +302,12 @@ class LocationService {
       (status) => status.isGranted || status.isLimited,
     );
 
-    debugPrint('[LocationService] 位置權限：$allGranted');
     return allGranted;
   }
 
   /// 請求背景位置權限（Geofencing 需要）
   Future<bool> requestBackgroundLocationPermission() async {
     final status = await Permission.locationAlways.request();
-    debugPrint('[LocationService] 背景位置權限：${status.name}');
     return status.isGranted;
   }
 
@@ -333,7 +315,6 @@ class LocationService {
   Future<bool> requestNotificationPermission() async {
     if (defaultTargetPlatform == TargetPlatform.android) {
       final status = await Permission.notification.request();
-      debugPrint('[LocationService] 通知權限：${status.name}');
       return status.isGranted;
     }
     return true;

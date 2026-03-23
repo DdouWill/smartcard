@@ -69,7 +69,6 @@ class DatabaseService {
     );
 
     _initialized = true;
-    debugPrint('[DatabaseService] 初始化完成，已載入 ${_cardsBox.length} 張卡片');
   }
 
   /// 註冊 Hive TypeAdapter
@@ -91,14 +90,12 @@ class DatabaseService {
       if (existingKey != null) {
         return base64.decode(existingKey);
       }
-    } catch (e) {
-      debugPrint('[DatabaseService] 讀取金鑰失敗，嘗試重新建立：$e');
+    } catch (_) {
     }
 
     // 首次執行：生成新的 256-bit (32 bytes) 隨機金鑰
     final keyBytes = List<int>.generate(32, (_) => Random.secure().nextInt(256));
     await _secureStorage.write(key: keyName, value: base64.encode(keyBytes));
-    debugPrint('[DatabaseService] 已生成新的 AES 加密金鑰（存入 Keystore）');
 
     return keyBytes;
   }

@@ -3,7 +3,6 @@
 // 根據定位結果動態顯示對應的會員卡條碼
 
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:home_widget/home_widget.dart';
 
 import '../models/member_card.dart';
@@ -33,7 +32,6 @@ class WidgetService {
 
   /// 初始化 home_widget 設定
   Future<void> initialize() async {
-    debugPrint('[WidgetService] 初始化完成');
   }
 
   // ──────────────────────────────────────────
@@ -60,8 +58,7 @@ class WidgetService {
 
       // 通知 Android 重繪 Widget
       await _notifyWidgetUpdate();
-    } catch (e) {
-      debugPrint('[WidgetService] Widget 更新失敗：$e');
+    } catch (_) {
     }
   }
 
@@ -86,7 +83,6 @@ class WidgetService {
       await HomeWidget.saveWidgetData<String>('primary_card_id', '');
     }
 
-    debugPrint('[WidgetService] 更新為無匹配模式');
   }
 
   /// 單張卡片符合：直接顯示條碼
@@ -101,7 +97,6 @@ class WidgetService {
     );
     await _saveCardData('primary', card);
 
-    debugPrint('[WidgetService] 更新為單卡模式：${card.storeName}');
   }
 
   /// 多張卡片符合：顯示店家按鈕清單
@@ -132,7 +127,6 @@ class WidgetService {
       }
     }
 
-    debugPrint('[WidgetService] 更新為多卡模式：${cards.length} 張');
   }
 
   /// 儲存單張卡片資料到 Widget 共享儲存
@@ -164,7 +158,6 @@ class WidgetService {
     await HomeWidget.updateWidget(
       androidName: _widgetProviderClass,
     );
-    debugPrint('[WidgetService] 已通知 Android 重繪 Widget');
   }
 
   // ──────────────────────────────────────────
@@ -178,7 +171,6 @@ class WidgetService {
   ) {
     _widgetClickSubscription?.cancel();
     _widgetClickSubscription = HomeWidget.widgetClicked.listen(onWidgetClicked);
-    debugPrint('[WidgetService] 已設定 Widget 點擊回調');
   }
 
   void dispose() {
@@ -191,7 +183,6 @@ class WidgetService {
   ]) async {
     final uri = await HomeWidget.initiallyLaunchedFromHomeWidget();
     if (uri != null) {
-      debugPrint('[WidgetService] 從 Widget 啟動，URI：$uri');
       onWidgetClicked?.call(uri);
     }
   }

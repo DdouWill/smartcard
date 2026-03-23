@@ -3,7 +3,6 @@
 // 支援三種輸入方式：相機掃描（即時）、圖片辨識、手動輸入
 
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:mobile_scanner/mobile_scanner.dart' as ms;
 
 import '../models/member_card.dart';
@@ -54,12 +53,10 @@ class BarcodeService {
       final capture = await _imageController!.analyzeImage(imageFile.path);
 
       if (capture == null || capture.barcodes.isEmpty) {
-        debugPrint('[BarcodeService] 圖片中未找到條碼');
         return BarcodeScanResult.failure('圖片中未偵測到條碼，請確認圖片包含清晰的條碼');
       }
 
       final barcode = _selectPreferredBarcode(capture.barcodes);
-      debugPrint('[BarcodeService] 圖片辨識成功：${barcode.rawValue} (${barcode.format.name})');
 
       return BarcodeScanResult(
         value: barcode.displayValue ?? barcode.rawValue ?? '',
@@ -67,7 +64,6 @@ class BarcodeService {
         success: true,
       );
     } catch (e) {
-      debugPrint('[BarcodeService] 圖片辨識失敗：$e');
       return BarcodeScanResult.failure('條碼辨識失敗：$e');
     }
   }
@@ -175,6 +171,5 @@ class BarcodeService {
   Future<void> dispose() async {
     await _imageController?.dispose();
     _imageController = null;
-    debugPrint('[BarcodeService] 資源已釋放');
   }
 }
