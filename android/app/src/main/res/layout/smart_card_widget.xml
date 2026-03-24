@@ -3,20 +3,23 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
-    android:padding="8dp"
+    android:paddingStart="10dp"
+    android:paddingEnd="10dp"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp"
     android:gravity="center_vertical"
     android:background="@android:color/white">
 
-    <!-- App icon（左側） -->
+    <!-- App icon（左側，垂直置中） -->
     <ImageView
         android:id="@+id/widget_app_icon"
-        android:layout_width="36dp"
-        android:layout_height="36dp"
-        android:layout_marginEnd="8dp"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginEnd="10dp"
         android:src="@mipmap/ic_launcher"
         android:contentDescription="SmartCard" />
 
-    <!-- 條碼區域（主體，佔滿剩餘空間） -->
+    <!-- 條碼區域（主體） -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="match_parent"
@@ -24,7 +27,20 @@
         android:orientation="vertical"
         android:gravity="center">
 
-        <!-- 條碼圖片（盡量放大） -->
+        <!-- 店名（條碼上方） -->
+        <TextView
+            android:id="@+id/widget_store_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="2dp"
+            android:textSize="11sp"
+            android:textColor="#666666"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:visibility="gone" />
+
+        <!-- 條碼圖片（佔滿剩餘空間） -->
         <ImageView
             android:id="@+id/widget_barcode_image"
             android:layout_width="match_parent"
@@ -33,23 +49,9 @@
             android:scaleType="fitCenter"
             android:visibility="gone"
             android:contentDescription="條碼" />
-
-        <!-- 店名（條碼下方） -->
-        <TextView
-            android:id="@+id/widget_store_name"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textSize="13sp"
-            android:textColor="#555555"
-            android:textStyle="bold"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:gravity="center"
-            android:visibility="gone" />
     </LinearLayout>
 
-    <!-- 隱藏的 title（保留 id 供 Kotlin 使用） -->
+    <!-- 隱藏的 title -->
     <TextView
         android:id="@+id/widget_title"
         android:layout_width="0dp"
