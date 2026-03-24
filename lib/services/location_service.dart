@@ -10,6 +10,7 @@ import 'package:network_info_plus/network_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../models/member_card.dart';
+import 'store_location_service.dart';
 
 /// 定位結果，包含觸發來源與匹配卡片清單
 class LocationResult {
@@ -17,12 +18,14 @@ class LocationResult {
   final LocationTrigger trigger; // 觸發來源
   final String? currentSsid; // 目前連線的 WiFi SSID（可能為 null）
   final Position? currentPosition; // 目前 GPS 位置（可能為 null）
+  final NearestStoreInfo? nearestStore; // 最近門市資訊（無符合時提示用）
 
   const LocationResult({
     required this.matchedCards,
     required this.trigger,
     this.currentSsid,
     this.currentPosition,
+    this.nearestStore,
   });
 
   /// 是否有符合的卡片
@@ -130,10 +133,20 @@ class LocationService {
       }
     }
 
-    // ── Step 3：無符合 ──
-    result = const LocationResult(
+    // ── Step 3：無符合 → 找最近門市作為提示 ──
+    NearestStoreInfo? nearest;
+    final pos = await getCurrentPosition();
+    if (pos != null) {
+      nearest = await StoreLocationService().findNearestStore(
+        userLat: pos.latitude,
+        userLng: pos.longitude,
+      );
+    }
+    result = LocationResult(
       matchedCards: [],
       trigger: LocationTrigger.none,
+      currentPosition: pos,
+      nearestStore: nearest,
     );
     return _updateLastResult(result);
   }
