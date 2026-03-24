@@ -3,15 +3,15 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
-    android:padding="6dp"
+    android:padding="8dp"
     android:gravity="center_vertical"
     android:background="@android:color/white">
 
     <!-- App icon（左側） -->
     <ImageView
         android:id="@+id/widget_app_icon"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
         android:layout_marginEnd="8dp"
         android:src="@mipmap/ic_launcher"
         android:contentDescription="SmartCard" />
@@ -39,22 +39,24 @@
             android:id="@+id/widget_store_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="10sp"
-            android:textColor="#666666"
+            android:layout_marginTop="2dp"
+            android:textSize="13sp"
+            android:textColor="#555555"
+            android:textStyle="bold"
             android:maxLines="1"
             android:ellipsize="end"
             android:gravity="center"
             android:visibility="gone" />
     </LinearLayout>
 
-    <!-- 隱藏的 title（保留 id 供 Kotlin 使用，但不顯示） -->
+    <!-- 隱藏的 title（保留 id 供 Kotlin 使用） -->
     <TextView
         android:id="@+id/widget_title"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:visibility="gone" />
 
-    <!-- 多卡按鈕容器（需要時展開） -->
+    <!-- 多卡按鈕容器 -->
     <LinearLayout
         android:id="@+id/widget_multi_card_container"
         android:layout_width="wrap_content"
