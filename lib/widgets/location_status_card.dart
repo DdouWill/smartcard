@@ -182,7 +182,7 @@ class LocationStatusCard extends StatelessWidget {
               end: Alignment.bottomRight,
               colors: [
                 cardColor,
-                cardColor.withValues(alpha: 0.7),
+                cardColor.withOpacity( 0.7),
               ],
             ),
           ),
@@ -198,14 +198,14 @@ class LocationStatusCard extends StatelessWidget {
                       children: [
                         Icon(
                           Icons.location_on,
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: Colors.white.withOpacity( 0.9),
                           size: 16,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           '附近的店家',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.8),
+                            color: Colors.white.withOpacity( 0.8),
                             fontSize: 12,
                           ),
                         ),
@@ -224,7 +224,7 @@ class LocationStatusCard extends StatelessWidget {
                     Text(
                       '點擊出示條碼',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
+                        color: Colors.white.withOpacity( 0.7),
                         fontSize: 12,
                       ),
                     ),
@@ -305,9 +305,9 @@ class LocationStatusCard extends StatelessWidget {
                         width: 120,
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.15),
+                          color: color.withOpacity( 0.15),
                           border: Border.all(
-                            color: color.withValues(alpha: 0.4),
+                            color: color.withOpacity( 0.4),
                           ),
                           borderRadius: BorderRadius.circular(8),
                         ),

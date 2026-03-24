@@ -125,9 +125,9 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
+            color: Colors.white.withOpacity( 0.15),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+            border: Border.all(color: Colors.white.withOpacity( 0.3)),
           ),
           child: Text(
             widget.card.barcodeFormat.name.toUpperCase(),

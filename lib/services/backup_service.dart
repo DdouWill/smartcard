@@ -7,6 +7,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:meta/meta.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pointycastle/export.dart';
 
@@ -222,6 +223,16 @@ class BackupService {
       'updatedAt': card.updatedAt.toIso8601String(),
     };
   }
+
+  /// 加密資料（供測試使用）
+  @visibleForTesting
+  Uint8List encryptData(Uint8List plaintext, String password) =>
+      _encrypt(plaintext, password);
+
+  /// 解密資料（供測試使用）
+  @visibleForTesting
+  Uint8List decryptData(Uint8List data, String password) =>
+      _decrypt(data, password);
 
   MemberCard _cardFromJson(Map<String, dynamic> json) {
     final gpsZones = (json['gpsZones'] as List<dynamic>?)

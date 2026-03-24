@@ -255,7 +255,7 @@ class CardWidget extends StatelessWidget {
               height: 4,
               margin: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: Theme.of(ctx).colorScheme.outline.withValues(alpha: 0.4),
+                color: Theme.of(ctx).colorScheme.outline.withOpacity(0.4),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),

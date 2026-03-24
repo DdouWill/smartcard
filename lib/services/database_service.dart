@@ -165,4 +165,24 @@ class DatabaseService {
     await _cardsBox.close();
     await _settingsBox.close();
   }
+
+  /// 用於測試的初始化方法（無加密）
+  @visibleForTesting
+  Future<void> initializeForTesting(String path) async {
+    if (_initialized) return;
+    Hive.init(path);
+    _registerAdapters();
+    _cardsBox = await Hive.openBox<MemberCard>(_BoxNames.memberCards);
+    _settingsBox = await Hive.openBox<AppSettings>(_BoxNames.appSettings);
+    _initialized = true;
+  }
+
+  /// 用於測試的重置方法
+  @visibleForTesting
+  Future<void> resetForTesting() async {
+    if (!_initialized) return;
+    await _cardsBox.deleteFromDisk();
+    await _settingsBox.deleteFromDisk();
+    _initialized = false;
+  }
 }

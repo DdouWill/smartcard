@@ -137,7 +137,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             Icon(
               Icons.credit_card_outlined,
               size: 80,
-              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
+              color: Theme.of(context).colorScheme.outline.withOpacity( 0.5),
             ),
             const SizedBox(height: 24),
             Text(

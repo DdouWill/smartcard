@@ -126,7 +126,7 @@ class _ColorCircle extends StatelessWidget {
                 : null,
             boxShadow: [
               BoxShadow(
-                color: color.withValues(alpha: 0.4),
+                color: color.withOpacity(0.4),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),

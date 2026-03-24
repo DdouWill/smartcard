@@ -316,7 +316,7 @@ class _AddCardScreenState extends State<AddCardScreen>
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color:
-                    Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                    Theme.of(context).colorScheme.outline.withOpacity( 0.3),
               ),
             ),
             child: Column(
@@ -509,7 +509,7 @@ class _AddCardScreenState extends State<AddCardScreen>
               color: Theme.of(context)
                   .colorScheme
                   .primaryContainer
-                  .withValues(alpha: 0.3),
+                  .withOpacity( 0.3),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
