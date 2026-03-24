@@ -43,6 +43,18 @@
         android:visibility="gone"
         android:contentDescription="條碼" />
 
+    <TextView
+        android:id="@+id/widget_store_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:textColor="#666666"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:layout_marginTop="4dp"
+        android:visibility="gone" />
+
     <LinearLayout
         android:id="@+id/widget_multi_card_container"
         android:layout_width="match_parent"
