@@ -100,12 +100,12 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
                     Uri.parse("smartcard://home")
                 }
                 // 使用 HomeWidget 標準啟動方式，讓 Flutter 端能收到 URI callback
-                val pendingIntent = HomeWidgetLaunchIntent.getActivity(
+                val launchPending = HomeWidgetLaunchIntent.getActivity(
                     context,
                     MainActivity::class.java,
                     deepLinkUri
                 )
-                pendingIntent.send()
+                launchPending.send()
             }
         }
     }
@@ -339,7 +339,7 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
         )
     }
 
-    /** 建立開啟 App 的 PendingIntent（使用 HomeWidget 標準啟動） */
+    /** 建立開啟 App 的 PendingIntent（使用 HomeWidget 讓 Flutter 收到 URI） */
     private fun createOpenAppIntent(context: Context, cardId: String?): PendingIntent {
         val uri = if (!cardId.isNullOrEmpty()) {
             Uri.parse("smartcard://card/$cardId")

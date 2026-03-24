@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 
 import 'app_controller.dart';
 import 'app_router.dart';
-import 'package:home_widget/home_widget.dart';
 import 'services/database_service.dart';
 
 Future<void> main() async {
@@ -18,50 +17,12 @@ Future<void> main() async {
   runApp(const SmartCardApp());
 }
 
-class SmartCardApp extends StatefulWidget {
+class SmartCardApp extends StatelessWidget {
   const SmartCardApp({super.key});
-
-  @override
-  State<SmartCardApp> createState() => _SmartCardAppState();
-}
-
-class _SmartCardAppState extends State<SmartCardApp> {
-  final _navigatorKey = GlobalKey<NavigatorState>();
-
-  @override
-  void initState() {
-    super.initState();
-    // 處理 Widget deep link（App 從 Widget 啟動時）
-    _handleIncomingDeepLink();
-  }
-
-  Future<void> _handleIncomingDeepLink() async {
-    // 延遲等 Navigator 初始化完成
-    await Future.delayed(const Duration(milliseconds: 500));
-    // 透過 home_widget 取得啟動 URI
-    try {
-      final uri = await HomeWidget.initiallyLaunchedFromHomeWidget();
-      if (uri != null) {
-        _navigateByUri(uri);
-      }
-    } catch (_) {}
-  }
-
-  void _navigateByUri(Uri uri) {
-    final pathSegments = uri.pathSegments;
-    if (pathSegments.isNotEmpty) {
-      final cardId = pathSegments.last;
-      final card = AppController().getCardById(cardId);
-      if (card != null) {
-        _navigatorKey.currentState?.pushNamed('/card/$cardId');
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      navigatorKey: _navigatorKey,
       title: 'SmartCard 智慧會員卡',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
