@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:smartcard/models/member_card.dart';
 import 'package:smartcard/services/store_location_service.dart';
 
 void main() {
