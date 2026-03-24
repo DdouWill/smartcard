@@ -7,6 +7,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../data/known_stores.dart';
 import '../models/member_card.dart';
 import '../utils/color_utils.dart';
 import 'barcode_display_widget.dart';
@@ -101,19 +102,13 @@ class CardWidget extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        // 店家名稱頭字圓形
+                        // 店家 emoji 圓形
                         CircleAvatar(
                           backgroundColor: cardColor,
                           radius: 22,
                           child: Text(
-                            card.storeName.isNotEmpty
-                                ? card.storeName[0]
-                                : '?',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
+                            getStoreEmoji(card.storeName),
+                            style: const TextStyle(fontSize: 22),
                           ),
                         ),
                         const SizedBox(width: 12),
