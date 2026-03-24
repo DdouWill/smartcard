@@ -12,6 +12,7 @@ import 'package:uuid/uuid.dart';
 import 'package:image_picker/image_picker.dart' show ImagePicker, ImageSource;
 
 import '../app_controller.dart';
+import '../data/known_stores.dart';
 import '../models/member_card.dart';
 import '../services/barcode_service.dart';
 import '../widgets/barcode_display_widget.dart';
@@ -30,39 +31,8 @@ class AddCardScreen extends StatefulWidget {
   State<AddCardScreen> createState() => _AddCardScreenState();
 }
 
-// 台灣常見連鎖店家（用於自動補全）
-const _commonStores = [
-  '全聯福利中心',
-  '家樂福',
-  '大潤發',
-  '好市多 Costco',
-  '屈臣氏',
-  '康是美',
-  '寶雅',
-  '小北百貨',
-  '統一超商 7-ELEVEN',
-  '全家便利商店',
-  '萊爾富',
-  'OK 超商',
-  '星巴克',
-  '路易莎咖啡',
-  '摩斯漢堡',
-  '麥當勞',
-  '肯德基',
-  '丹丹漢堡',
-  '鼎泰豐',
-  '誠品書店',
-  '光南大批發',
-  '無印良品 MUJI',
-  'UNIQLO',
-  'NET',
-  '愛買',
-  '美廉社',
-  '頂好超市',
-  '全國電子',
-  '燦坤',
-  'IKEA',
-];
+/// 「其他」選項的特殊值
+const _kOtherStore = '__other__';
 
 class _AddCardScreenState extends State<AddCardScreen>
     with SingleTickerProviderStateMixin {
@@ -80,6 +50,10 @@ class _AddCardScreenState extends State<AddCardScreen>
   // 輸入控制器
   final _storeNameController = TextEditingController();
   final _barcodeValueController = TextEditingController();
+
+  // 店家 Dropdown 狀態
+  String? _selectedStoreKey; // knownStore.name 或 _kOtherStore
+  bool get _isOtherStore => _selectedStoreKey == _kOtherStore;
 
   // 表單狀態
   BarcodeFormatType _selectedFormat = BarcodeFormatType.ean13;
@@ -120,6 +94,8 @@ class _AddCardScreenState extends State<AddCardScreen>
         label: z.label,
       )).toList();
       _previewBarcodeValue = card.barcodeValue;
+      // 匹配已知店家或設為「其他」
+      _selectedStoreKey = _matchKnownStore(card.storeName);
       // 編輯模式直接跳到手動輸入 Tab
       _tabController.index = 1;
     }
@@ -235,45 +211,61 @@ class _AddCardScreenState extends State<AddCardScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 店家名稱輸入（帶自動補全常見店家）
-          Autocomplete<String>(
-            optionsBuilder: (textEditingValue) {
-              if (textEditingValue.text.isEmpty) return const [];
-              final query = textEditingValue.text.toLowerCase();
-              return _commonStores.where(
-                (store) => store.toLowerCase().contains(query),
-              );
-            },
-            onSelected: (selection) {
-              _storeNameController.text = selection;
-            },
-            fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
-              // Sync the autocomplete controller with our form controller
-              if (controller.text != _storeNameController.text) {
-                controller.text = _storeNameController.text;
-              }
-              controller.addListener(() {
-                if (_storeNameController.text != controller.text) {
-                  _storeNameController.text = controller.text;
+          // 店家名稱下拉選單
+          DropdownButtonFormField<String>(
+            value: _selectedStoreKey,
+            decoration: const InputDecoration(
+              labelText: '店家名稱 *',
+              prefixIcon: Icon(Icons.store),
+              border: OutlineInputBorder(),
+            ),
+            isExpanded: true,
+            items: [
+              ...knownStores.map((store) => DropdownMenuItem(
+                    value: store.name,
+                    child: Text(store.name),
+                  )),
+              const DropdownMenuItem(
+                value: _kOtherStore,
+                child: Text('其他'),
+              ),
+            ],
+            onChanged: (value) {
+              setState(() {
+                _selectedStoreKey = value;
+                if (value != null && value != _kOtherStore) {
+                  _storeNameController.text = value;
+                  // 自動切換條碼格式
+                  final store = knownStores.firstWhere((s) => s.name == value);
+                  if (store.defaultBarcodeFormat != null) {
+                    _selectedFormat = _parseBarcodeFormat(store.defaultBarcodeFormat!);
+                    _previewBarcodeValue = _barcodeValueController.text.trim();
+                  }
+                } else {
+                  _storeNameController.text = '';
                 }
               });
-              return TextFormField(
-                controller: controller,
-                focusNode: focusNode,
-                decoration: const InputDecoration(
-                  labelText: '店家名稱 *',
-                  hintText: '例：全聯福利中心',
-                  prefixIcon: Icon(Icons.store),
-                  border: OutlineInputBorder(),
-                ),
-                textInputAction: TextInputAction.next,
-                onFieldSubmitted: (_) => onSubmitted(),
-                validator: (v) =>
-                    (v?.trim().isEmpty ?? true) ? '請輸入店家名稱' : null,
-              );
             },
+            validator: (v) => (v == null) ? '請選擇店家' : null,
           ),
           const SizedBox(height: 16),
+
+          // 「其他」→ 自訂店名輸入
+          if (_isOtherStore) ...[
+            TextFormField(
+              controller: _storeNameController,
+              decoration: const InputDecoration(
+                labelText: '自訂店家名稱 *',
+                hintText: '請輸入店家名稱',
+                prefixIcon: Icon(Icons.edit),
+                border: OutlineInputBorder(),
+              ),
+              textInputAction: TextInputAction.next,
+              validator: (v) =>
+                  (v?.trim().isEmpty ?? true) ? '請輸入店家名稱' : null,
+            ),
+            const SizedBox(height: 16),
+          ],
 
           // 條碼號碼輸入
           TextFormField(
@@ -527,6 +519,8 @@ class _AddCardScreenState extends State<AddCardScreen>
           _scannedFormat = result.format;
           _barcodeValueController.text = result.value;
           _selectedFormat = result.format;
+          // 嘗試自動匹配已知店家
+          _tryAutoSelectStore(result.value);
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('辨識成功：${result.value}')),
@@ -592,6 +586,15 @@ class _AddCardScreenState extends State<AddCardScreen>
       return;
     }
 
+    // 自訂店家必須設定 GPS 圍欄
+    if (_isOtherStore && _gpsZones.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('自訂店家需設定 GPS 圍欄')),
+      );
+      _tabController.animateTo(1);
+      return;
+    }
+
     final format = _scannedFormat ?? _selectedFormat;
 
     // 顯示確認對話框（含條碼預覽）
@@ -642,6 +645,59 @@ class _AddCardScreenState extends State<AddCardScreen>
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
+  }
+
+  /// 嘗試從辨識文字自動選中已知店家
+  void _tryAutoSelectStore(String recognizedText) {
+    final lower = recognizedText.toLowerCase();
+    for (final store in knownStores) {
+      final storeLower = store.name.toLowerCase();
+      if (lower.contains(storeLower) || storeLower.contains(lower)) {
+        _selectedStoreKey = store.name;
+        _storeNameController.text = store.name;
+        if (store.defaultBarcodeFormat != null) {
+          _selectedFormat = _parseBarcodeFormat(store.defaultBarcodeFormat!);
+        }
+        return;
+      }
+    }
+  }
+
+  /// 將條碼格式字串轉為 BarcodeFormatType
+  BarcodeFormatType _parseBarcodeFormat(String format) {
+    switch (format.toUpperCase()) {
+      case 'EAN13':
+        return BarcodeFormatType.ean13;
+      case 'EAN8':
+        return BarcodeFormatType.ean8;
+      case 'CODE128':
+        return BarcodeFormatType.code128;
+      case 'CODE39':
+        return BarcodeFormatType.code39;
+      case 'QR':
+        return BarcodeFormatType.qr;
+      case 'PDF417':
+        return BarcodeFormatType.pdf417;
+      case 'AZTEC':
+        return BarcodeFormatType.aztec;
+      case 'DATAMATRIX':
+        return BarcodeFormatType.dataMatrix;
+      default:
+        return BarcodeFormatType.code128;
+    }
+  }
+
+  /// 嘗試將店名匹配到已知店家，找不到則回傳 _kOtherStore
+  String _matchKnownStore(String name) {
+    final lower = name.toLowerCase();
+    for (final store in knownStores) {
+      if (store.name.toLowerCase() == lower ||
+          store.name.toLowerCase().contains(lower) ||
+          lower.contains(store.name.toLowerCase())) {
+        return store.name;
+      }
+    }
+    return _kOtherStore;
   }
 
   // ──────────────────────────────────────────
