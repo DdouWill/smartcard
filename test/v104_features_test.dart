@@ -102,13 +102,13 @@ void main() {
       if (!Hive.isAdapterRegistered(2)) {
         Hive.registerAdapter(GpsZoneAdapter());
       }
-      await DatabaseService().init();
+      await DatabaseService().initialize();
     });
 
     setUp(() {
       barcodeService = BarcodeService();
       // 清除所有卡片
-      DatabaseService().clearAllCards();
+      DatabaseService().clearAll();
     });
 
     test('空資料庫不會有重複', () async {
@@ -193,8 +193,8 @@ void main() {
       try {
         final results = await service.getNearbyStoreLocations(
           '7-ELEVEN',
-          25.0330,
-          121.5654,
+          userLat: 25.0330,
+          userLng: 121.5654,
         );
         expect(results, isList);
       } catch (e) {
@@ -294,8 +294,8 @@ void main() {
       if (!Hive.isAdapterRegistered(2)) {
         Hive.registerAdapter(GpsZoneAdapter());
       }
-      await DatabaseService().init();
-      DatabaseService().clearAllCards();
+      await DatabaseService().initialize();
+      DatabaseService().clearAll();
     });
 
     testWidgets('新增卡片頁顯示搜尋欄位', (tester) async {
