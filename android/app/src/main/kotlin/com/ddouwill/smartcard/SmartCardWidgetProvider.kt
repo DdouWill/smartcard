@@ -189,7 +189,7 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
 
             val barcodeValue = widgetData.getString("primary_barcode_value", "") ?: ""
             val barcodeFormat = widgetData.getString("primary_barcode_format", "CODE_128") ?: "CODE_128"
-            setBarcodeDisplay(views, barcodeValue, barcodeFormat)
+            setBarcodeDisplay(views, barcodeValue, barcodeFormat, storeName)
 
             val clickIntent = createOpenAppIntent(context, cardId)
             views.setOnClickPendingIntent(R.id.widget_barcode_image, clickIntent)
@@ -218,7 +218,7 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
 
         showCardViews(views, storeName)
         hideNavigation(views)
-        setBarcodeDisplay(views, barcodeValue, barcodeFormat)
+        setBarcodeDisplay(views, barcodeValue, barcodeFormat, storeName)
 
         val clickIntent = createOpenAppIntent(context, cardId)
         views.setOnClickPendingIntent(R.id.widget_barcode_image, clickIntent)
@@ -260,7 +260,7 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
         views.setTextViewText(R.id.widget_page_indicator, "${currentIndex + 1}/$cardCount")
 
         // 條碼顯示
-        setBarcodeDisplay(views, barcodeValue, barcodeFormat)
+        setBarcodeDisplay(views, barcodeValue, barcodeFormat, storeName)
 
         // ◀ 上一張：第一張時隱藏
         if (currentIndex > 0) {
@@ -309,14 +309,14 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
         views.setViewVisibility(R.id.widget_next_btn, View.GONE)
     }
 
-    /** 設定條碼圖片和底部號碼文字 */
-    private fun setBarcodeDisplay(views: RemoteViews, barcodeValue: String, barcodeFormat: String) {
+    /** 設定條碼圖片和底部店名文字 */
+    private fun setBarcodeDisplay(views: RemoteViews, barcodeValue: String, barcodeFormat: String, storeName: String = "") {
         if (barcodeValue.isNotEmpty()) {
             val bitmap = generateBarcodeBitmap(barcodeValue, barcodeFormat)
             if (bitmap != null) {
                 views.setImageViewBitmap(R.id.widget_barcode_image, bitmap)
             }
-            views.setTextViewText(R.id.widget_barcode_number, barcodeValue)
+            views.setTextViewText(R.id.widget_barcode_number, storeName.ifEmpty { barcodeValue })
         } else {
             views.setTextViewText(R.id.widget_barcode_number, "")
         }

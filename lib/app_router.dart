@@ -43,10 +43,29 @@ class AppRouter {
     if (deepLinkCardId != null) {
       final card = AppController().getCardById(deepLinkCardId);
       if (card != null) {
-        return _buildRoute(
-          routeSettings,
-          CardDetailScreen(card: card),
-          withSlideTransition: true,
+        // 用 Navigator builder 先推 HomeScreen 再推 CardDetail，確保有返回鍵
+        return MaterialPageRoute(
+          settings: routeSettings,
+          builder: (context) {
+            // 延遲推入 CardDetail，讓 HomeScreen 先建立
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.of(context).push(
+                PageRouteBuilder(
+                  pageBuilder: (ctx, anim, secAnim) => CardDetailScreen(card: card),
+                  transitionsBuilder: (ctx, anim, secAnim, child) {
+                    return SlideTransition(
+                      position: anim.drive(
+                        Tween(begin: const Offset(0.0, 1.0), end: Offset.zero)
+                            .chain(CurveTween(curve: Curves.easeInOutQuart)),
+                      ),
+                      child: child,
+                    );
+                  },
+                ),
+              );
+            });
+            return const HomeScreen();
+          },
         );
       }
       // 卡片不存在（已刪除），gracefully 回到首頁
