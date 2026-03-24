@@ -48,6 +48,8 @@
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.ddouwill.smartcard.WIDGET_CLICK" />
                 <action android:name="com.ddouwill.smartcard.LOCATION_UPDATE" />
+                <action android:name="com.ddouwill.smartcard.NAV_PREV" />
+                <action android:name="com.ddouwill.smartcard.NAV_NEXT" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"

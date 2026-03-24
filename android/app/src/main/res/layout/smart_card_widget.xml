@@ -1,83 +1,127 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- SmartCard Widget 佈局
+     支援三種模式：noMatch / singleCard / multipleCards
+     multipleCards 模式下顯示 < > 箭頭切換卡片 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="horizontal"
-    android:paddingStart="10dp"
-    android:paddingEnd="14dp"
-    android:paddingTop="4dp"
-    android:paddingBottom="4dp"
-    android:gravity="center_vertical"
+    android:orientation="vertical"
+    android:padding="8dp"
     android:background="@android:color/white">
 
-    <!-- 左側：icon + 店名 -->
+    <!-- 頂部列：App icon + 店名 + 頁碼指示器 -->
     <LinearLayout
-        android:layout_width="72dp"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:layout_marginEnd="10dp">
+        android:id="@+id/widget_top_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:visibility="gone">
 
         <ImageView
             android:id="@+id/widget_app_icon"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
             android:src="@mipmap/ic_launcher"
+            android:layout_marginEnd="6dp"
             android:contentDescription="SmartCard" />
 
         <TextView
             android:id="@+id/widget_store_name"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
-            android:textSize="11sp"
+            android:layout_weight="1"
+            android:textSize="13sp"
             android:textColor="#333333"
             android:textStyle="bold"
             android:maxLines="1"
-            android:ellipsize="end"
-            android:gravity="center"
+            android:ellipsize="end" />
+
+        <!-- 頁碼指示器，例如 "1/3"，僅多卡時顯示 -->
+        <TextView
+            android:id="@+id/widget_page_indicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="11sp"
+            android:textColor="#888888"
+            android:layout_marginStart="8dp"
             android:visibility="gone" />
     </LinearLayout>
 
-    <!-- 條碼（主體） -->
+    <!-- 中間：條碼圖片（佔滿剩餘高度） -->
     <ImageView
         android:id="@+id/widget_barcode_image"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
         android:layout_weight="1"
         android:scaleType="fitCenter"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="2dp"
         android:visibility="gone"
         android:contentDescription="條碼" />
 
-    <!-- 隱藏的 title（Kotlin 相容） -->
+    <!-- 底部導航列：◀ 上一張 | 條碼號碼 | 下一張 ▶ -->
+    <LinearLayout
+        android:id="@+id/widget_bottom_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:visibility="gone">
+
+        <!-- 上一張按鈕（至少 48dp 觸控區域） -->
+        <TextView
+            android:id="@+id/widget_prev_btn"
+            android:layout_width="48dp"
+            android:layout_height="36dp"
+            android:gravity="center"
+            android:text="◀"
+            android:textSize="14sp"
+            android:textColor="#1565C0"
+            android:background="?android:attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:visibility="gone" />
+
+        <!-- 條碼號碼文字 -->
+        <TextView
+            android:id="@+id/widget_barcode_number"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:textSize="11sp"
+            android:textColor="#666666"
+            android:maxLines="1"
+            android:ellipsize="middle" />
+
+        <!-- 下一張按鈕（至少 48dp 觸控區域） -->
+        <TextView
+            android:id="@+id/widget_next_btn"
+            android:layout_width="48dp"
+            android:layout_height="36dp"
+            android:gravity="center"
+            android:text="▶"
+            android:textSize="14sp"
+            android:textColor="#1565C0"
+            android:background="?android:attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- 隱藏的 title（供 Kotlin HomeWidgetPlugin 相容） -->
     <TextView
         android:id="@+id/widget_title"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:visibility="gone" />
 
-    <!-- 多卡按鈕容器 -->
-    <LinearLayout
-        android:id="@+id/widget_multi_card_container"
-        android:layout_width="wrap_content"
-        android:layout_height="match_parent"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:visibility="gone">
-
-        <Button android:id="@+id/widget_card_btn_0" android:layout_width="wrap_content" android:layout_height="32dp" android:textSize="10sp" android:visibility="gone" android:layout_marginEnd="4dp" />
-        <Button android:id="@+id/widget_card_btn_1" android:layout_width="wrap_content" android:layout_height="32dp" android:textSize="10sp" android:visibility="gone" android:layout_marginEnd="4dp" />
-        <Button android:id="@+id/widget_card_btn_2" android:layout_width="wrap_content" android:layout_height="32dp" android:textSize="10sp" android:visibility="gone" android:layout_marginEnd="4dp" />
-        <Button android:id="@+id/widget_card_btn_3" android:layout_width="wrap_content" android:layout_height="32dp" android:textSize="10sp" android:visibility="gone" android:layout_marginEnd="4dp" />
-        <Button android:id="@+id/widget_card_btn_4" android:layout_width="wrap_content" android:layout_height="32dp" android:textSize="10sp" android:visibility="gone" />
-    </LinearLayout>
-
-    <!-- 空狀態 -->
+    <!-- 空狀態：無卡片時顯示 -->
     <TextView
         android:id="@+id/widget_empty_text"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_weight="1"
         android:gravity="center"
         android:text="點擊新增會員卡"
         android:textSize="12sp"

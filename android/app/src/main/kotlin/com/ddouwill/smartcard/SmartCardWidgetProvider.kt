@@ -20,21 +20,33 @@ import es.antonborri.home_widget.HomeWidgetPlugin
  *
  * 負責讀取 Flutter 透過 home_widget 儲存的卡片資料，
  * 並根據顯示模式更新 Widget 的 RemoteViews。
- * 
- * 加強穩定性：
- * 1. 增加 null 檢查，避免 String.hashCode() 等崩潰。
- * 2. 處理資料不一致或空缺情況。
+ *
+ * 多卡模式：
+ * - 當定位匹配多張卡片時，顯示 ◀ ▶ 箭頭按鈕左右切換
+ * - 頂部顯示店名（左）+ 頁碼（右），例如 "1/3"
+ * - 底部顯示 ◀ | 條碼號碼 | ▶
+ * - 邊界處理：第一張隱藏 ◀，最後一張隱藏 ▶
+ * - 位置變更或資料更新時重設 index 為 0
  */
 class SmartCardWidgetProvider : AppWidgetProvider() {
 
     companion object {
         const val ACTION_WIDGET_CLICK = "com.ddouwill.smartcard.WIDGET_CLICK"
         const val ACTION_LOCATION_UPDATE = "com.ddouwill.smartcard.LOCATION_UPDATE"
+        const val ACTION_NAV_PREV = "com.ddouwill.smartcard.NAV_PREV"
+        const val ACTION_NAV_NEXT = "com.ddouwill.smartcard.NAV_NEXT"
         const val EXTRA_CARD_ID = "card_id"
 
         const val MODE_NO_MATCH = "noMatch"
         const val MODE_SINGLE_CARD = "singleCard"
         const val MODE_MULTIPLE_CARDS = "multipleCards"
+
+        // 導航用 PendingIntent 的固定 requestCode，避免與卡片 click 衝突
+        private const val RC_NAV_PREV = 9001
+        private const val RC_NAV_NEXT = 9002
+
+        // 多卡切換的當前索引（儲存在 home_widget SharedPreferences）
+        private const val KEY_CURRENT_INDEX = "widget_current_index"
 
         /**
          * 強制更新所有已註冊的 SmartCard Widget
@@ -67,26 +79,68 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
 
-        if (intent.action == ACTION_LOCATION_UPDATE) {
-            updateAllWidgets(context)
-            return
-        }
-
-        if (intent.action == ACTION_WIDGET_CLICK) {
-            val cardId = intent.getStringExtra(EXTRA_CARD_ID)
-            val deepLinkUri = if (cardId != null && cardId.isNotEmpty()) {
-                Uri.parse("smartcard://card/$cardId")
-            } else {
-                Uri.parse("smartcard://home")
+        when (intent.action) {
+            ACTION_LOCATION_UPDATE -> {
+                // 位置變更 → 重設卡片索引並更新 Widget
+                resetCardIndex(context)
+                updateAllWidgets(context)
             }
-
-            val launchIntent = Intent(context, MainActivity::class.java).apply {
-                data = deepLinkUri
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            ACTION_NAV_PREV -> {
+                navigateCard(context, -1)
             }
-            context.startActivity(launchIntent)
+            ACTION_NAV_NEXT -> {
+                navigateCard(context, +1)
+            }
+            ACTION_WIDGET_CLICK -> {
+                val cardId = intent.getStringExtra(EXTRA_CARD_ID)
+                val deepLinkUri = if (!cardId.isNullOrEmpty()) {
+                    Uri.parse("smartcard://card/$cardId")
+                } else {
+                    Uri.parse("smartcard://home")
+                }
+                val launchIntent = Intent(context, MainActivity::class.java).apply {
+                    data = deepLinkUri
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                }
+                context.startActivity(launchIntent)
+            }
         }
     }
+
+    // ──────────────────────────────────────────
+    // 多卡導航
+    // ──────────────────────────────────────────
+
+    /**
+     * 切換到上一張/下一張卡片
+     * @param direction -1 = 上一張, +1 = 下一張
+     */
+    private fun navigateCard(context: Context, direction: Int) {
+        val widgetData = HomeWidgetPlugin.getData(context)
+        val cardCount = widgetData.getInt("card_count", 0)
+        if (cardCount <= 1) return
+
+        val currentIndex = widgetData.getInt(KEY_CURRENT_INDEX, 0)
+        val newIndex = (currentIndex + direction).coerceIn(0, cardCount - 1)
+
+        // 邊界檢查：已在首張按 ◀ 或末張按 ▶ 時不動作
+        if (newIndex != currentIndex) {
+            widgetData.edit().putInt(KEY_CURRENT_INDEX, newIndex).apply()
+            updateAllWidgets(context)
+        }
+    }
+
+    /** 重設卡片導航索引為 0（位置變更或資料更新時呼叫） */
+    private fun resetCardIndex(context: Context) {
+        HomeWidgetPlugin.getData(context)
+            .edit()
+            .putInt(KEY_CURRENT_INDEX, 0)
+            .apply()
+    }
+
+    // ──────────────────────────────────────────
+    // Widget 更新
+    // ──────────────────────────────────────────
 
     private fun updateWidget(
         context: Context,
@@ -94,17 +148,15 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
         appWidgetId: Int
     ) {
         val widgetData = HomeWidgetPlugin.getData(context)
-
         val displayMode = widgetData.getString("widget_mode", MODE_NO_MATCH) ?: MODE_NO_MATCH
         val widgetTitle = widgetData.getString("widget_title", "SmartCard") ?: "SmartCard"
 
         val views = RemoteViews(context.packageName, R.layout.smart_card_widget)
-
         views.setTextViewText(R.id.widget_title, widgetTitle)
 
+        // App icon 點擊 → 開啟 App
         val openAppIntent = createOpenAppIntent(context, null)
         views.setOnClickPendingIntent(R.id.widget_app_icon, openAppIntent)
-        views.setOnClickPendingIntent(R.id.widget_title, openAppIntent)
 
         when (displayMode) {
             MODE_SINGLE_CARD -> updateSingleCardMode(context, views, widgetData)
@@ -115,6 +167,11 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
         appWidgetManager.updateAppWidget(appWidgetId, views)
     }
 
+    // ──────────────────────────────────────────
+    // 顯示模式
+    // ──────────────────────────────────────────
+
+    /** 無匹配：顯示最近使用的卡片或空狀態 */
     private fun updateNoMatchMode(
         context: Context,
         views: RemoteViews,
@@ -124,28 +181,20 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
         val cardId = widgetData.getString("primary_card_id", "") ?: ""
 
         if (storeName.isNotEmpty() && cardId.isNotEmpty()) {
-            views.setViewVisibility(R.id.widget_barcode_image, View.VISIBLE)
-            views.setViewVisibility(R.id.widget_store_name, View.VISIBLE)
-            views.setViewVisibility(R.id.widget_multi_card_container, View.GONE)
-            views.setViewVisibility(R.id.widget_empty_text, View.GONE)
-
-            views.setTextViewText(R.id.widget_store_name, storeName)
+            showCardViews(views, storeName)
+            hideNavigation(views)
 
             val barcodeValue = widgetData.getString("primary_barcode_value", "") ?: ""
             val barcodeFormat = widgetData.getString("primary_barcode_format", "CODE_128") ?: "CODE_128"
-            if (barcodeValue.isNotEmpty()) {
-                val bitmap = generateBarcodeBitmap(barcodeValue, barcodeFormat)
-                if (bitmap != null) {
-                    views.setImageViewBitmap(R.id.widget_barcode_image, bitmap)
-                }
-            }
+            setBarcodeDisplay(views, barcodeValue, barcodeFormat)
 
             val clickIntent = createOpenAppIntent(context, cardId)
             views.setOnClickPendingIntent(R.id.widget_barcode_image, clickIntent)
         } else {
+            // 空狀態
+            views.setViewVisibility(R.id.widget_top_bar, View.GONE)
             views.setViewVisibility(R.id.widget_barcode_image, View.GONE)
-            views.setViewVisibility(R.id.widget_store_name, View.GONE)
-            views.setViewVisibility(R.id.widget_multi_card_container, View.GONE)
+            views.setViewVisibility(R.id.widget_bottom_bar, View.GONE)
             views.setViewVisibility(R.id.widget_empty_text, View.VISIBLE)
 
             val clickIntent = createOpenAppIntent(context, null)
@@ -153,73 +202,167 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
         }
     }
 
+    /** 單卡：直接顯示條碼，無導航箭頭 */
     private fun updateSingleCardMode(
         context: Context,
         views: RemoteViews,
         widgetData: android.content.SharedPreferences
     ) {
-        views.setViewVisibility(R.id.widget_barcode_image, View.VISIBLE)
-        views.setViewVisibility(R.id.widget_store_name, View.VISIBLE)
-        views.setViewVisibility(R.id.widget_multi_card_container, View.GONE)
-        views.setViewVisibility(R.id.widget_empty_text, View.GONE)
-
         val storeName = widgetData.getString("primary_store_name", "") ?: ""
         val cardId = widgetData.getString("primary_card_id", "") ?: ""
         val barcodeValue = widgetData.getString("primary_barcode_value", "") ?: ""
         val barcodeFormat = widgetData.getString("primary_barcode_format", "CODE_128") ?: "CODE_128"
 
-        views.setTextViewText(R.id.widget_store_name, storeName)
-
-        if (barcodeValue.isNotEmpty()) {
-            val bitmap = generateBarcodeBitmap(barcodeValue, barcodeFormat)
-            if (bitmap != null) {
-                views.setImageViewBitmap(R.id.widget_barcode_image, bitmap)
-            }
-        }
+        showCardViews(views, storeName)
+        hideNavigation(views)
+        setBarcodeDisplay(views, barcodeValue, barcodeFormat)
 
         val clickIntent = createOpenAppIntent(context, cardId)
         views.setOnClickPendingIntent(R.id.widget_barcode_image, clickIntent)
     }
 
+    /**
+     * 多卡模式：顯示當前索引的卡片條碼，附帶 ◀ ▶ 切換
+     *
+     * 佈局：
+     *   頂部：[icon] 店名                1/N
+     *   中間：     ████ 條碼 ████
+     *   底部：  ◀  │  條碼號碼  │  ▶
+     */
     private fun updateMultipleCardsMode(
         context: Context,
         views: RemoteViews,
         widgetData: android.content.SharedPreferences
     ) {
-        views.setViewVisibility(R.id.widget_barcode_image, View.GONE)
-        views.setViewVisibility(R.id.widget_store_name, View.GONE)
-        views.setViewVisibility(R.id.widget_multi_card_container, View.VISIBLE)
-        views.setViewVisibility(R.id.widget_empty_text, View.GONE)
-
         val cardCount = widgetData.getInt("card_count", 0)
+        if (cardCount == 0) {
+            updateNoMatchMode(context, views, widgetData)
+            return
+        }
 
-        val buttonIds = intArrayOf(
-            R.id.widget_card_btn_0,
-            R.id.widget_card_btn_1,
-            R.id.widget_card_btn_2,
-            R.id.widget_card_btn_3,
-            R.id.widget_card_btn_4
-        )
+        // 取得當前索引，確保在有效範圍內
+        val currentIndex = widgetData.getInt(KEY_CURRENT_INDEX, 0)
+            .coerceIn(0, cardCount - 1)
 
-        for (i in buttonIds.indices) {
-            val storeName = widgetData.getString("card_${i}_store_name", "") ?: ""
-            val cardId = widgetData.getString("card_${i}_card_id", "") ?: ""
+        // 讀取當前卡片資料
+        val storeName = widgetData.getString("card_${currentIndex}_store_name", "") ?: ""
+        val cardId = widgetData.getString("card_${currentIndex}_card_id", "") ?: ""
+        val barcodeValue = widgetData.getString("card_${currentIndex}_barcode_value", "") ?: ""
+        val barcodeFormat = widgetData.getString("card_${currentIndex}_barcode_format", "CODE_128") ?: "CODE_128"
 
-            if (i < cardCount && storeName.isNotEmpty() && cardId.isNotEmpty()) {
-                views.setViewVisibility(buttonIds[i], View.VISIBLE)
-                views.setTextViewText(buttonIds[i], storeName)
+        showCardViews(views, storeName)
 
-                val clickIntent = createOpenAppIntent(context, cardId)
-                views.setOnClickPendingIntent(buttonIds[i], clickIntent)
-            } else {
-                views.setViewVisibility(buttonIds[i], View.GONE)
+        // 頁碼指示器
+        views.setViewVisibility(R.id.widget_page_indicator, View.VISIBLE)
+        views.setTextViewText(R.id.widget_page_indicator, "${currentIndex + 1}/$cardCount")
+
+        // 條碼顯示
+        setBarcodeDisplay(views, barcodeValue, barcodeFormat)
+
+        // ◀ 上一張：第一張時隱藏
+        if (currentIndex > 0) {
+            views.setViewVisibility(R.id.widget_prev_btn, View.VISIBLE)
+            views.setOnClickPendingIntent(
+                R.id.widget_prev_btn,
+                createNavPendingIntent(context, ACTION_NAV_PREV, RC_NAV_PREV)
+            )
+        } else {
+            views.setViewVisibility(R.id.widget_prev_btn, View.INVISIBLE)
+        }
+
+        // ▶ 下一張：最後一張時隱藏
+        if (currentIndex < cardCount - 1) {
+            views.setViewVisibility(R.id.widget_next_btn, View.VISIBLE)
+            views.setOnClickPendingIntent(
+                R.id.widget_next_btn,
+                createNavPendingIntent(context, ACTION_NAV_NEXT, RC_NAV_NEXT)
+            )
+        } else {
+            views.setViewVisibility(R.id.widget_next_btn, View.INVISIBLE)
+        }
+
+        // 條碼點擊 → 開啟 App 顯示該卡片
+        val clickIntent = createOpenAppIntent(context, cardId)
+        views.setOnClickPendingIntent(R.id.widget_barcode_image, clickIntent)
+    }
+
+    // ──────────────────────────────────────────
+    // UI 輔助方法
+    // ──────────────────────────────────────────
+
+    /** 顯示卡片相關的 UI 元件，隱藏空狀態 */
+    private fun showCardViews(views: RemoteViews, storeName: String) {
+        views.setViewVisibility(R.id.widget_top_bar, View.VISIBLE)
+        views.setViewVisibility(R.id.widget_barcode_image, View.VISIBLE)
+        views.setViewVisibility(R.id.widget_bottom_bar, View.VISIBLE)
+        views.setViewVisibility(R.id.widget_empty_text, View.GONE)
+        views.setTextViewText(R.id.widget_store_name, storeName)
+    }
+
+    /** 隱藏多卡導航元件（單卡/無匹配時使用） */
+    private fun hideNavigation(views: RemoteViews) {
+        views.setViewVisibility(R.id.widget_page_indicator, View.GONE)
+        views.setViewVisibility(R.id.widget_prev_btn, View.GONE)
+        views.setViewVisibility(R.id.widget_next_btn, View.GONE)
+    }
+
+    /** 設定條碼圖片和底部號碼文字 */
+    private fun setBarcodeDisplay(views: RemoteViews, barcodeValue: String, barcodeFormat: String) {
+        if (barcodeValue.isNotEmpty()) {
+            val bitmap = generateBarcodeBitmap(barcodeValue, barcodeFormat)
+            if (bitmap != null) {
+                views.setImageViewBitmap(R.id.widget_barcode_image, bitmap)
             }
+            views.setTextViewText(R.id.widget_barcode_number, barcodeValue)
+        } else {
+            views.setTextViewText(R.id.widget_barcode_number, "")
         }
     }
 
+    // ──────────────────────────────────────────
+    // Intent 建立
+    // ──────────────────────────────────────────
+
+    /** 建立導航按鈕的 PendingIntent（廣播給自己處理） */
+    private fun createNavPendingIntent(context: Context, action: String, requestCode: Int): PendingIntent {
+        val intent = Intent(context, SmartCardWidgetProvider::class.java).apply {
+            this.action = action
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            requestCode,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    /** 建立開啟 App 的 PendingIntent（支援 deep link 到特定卡片） */
+    private fun createOpenAppIntent(context: Context, cardId: String?): PendingIntent {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            if (!cardId.isNullOrEmpty()) {
+                data = Uri.parse("smartcard://card/$cardId")
+            }
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+
+        // 使用 cardId 的 hashCode 避免不同卡片的 PendingIntent 衝突
+        val requestCode = if (!cardId.isNullOrEmpty()) cardId.hashCode() else 0
+
+        return PendingIntent.getActivity(
+            context,
+            requestCode,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    // ──────────────────────────────────────────
+    // 條碼生成
+    // ──────────────────────────────────────────
 
     /**
-     * 生成條碼 Bitmap
+     * 使用 ZXing 生成條碼 Bitmap
+     * 支援多種格式：QR_CODE, EAN_13, CODE_128 等
      */
     private fun generateBarcodeBitmap(
         value: String,
@@ -243,16 +386,16 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
                 "CODABAR" -> BarcodeFormat.CODABAR
                 else -> BarcodeFormat.CODE_128
             }
-            
+
             val isSquare = format in listOf(
                 BarcodeFormat.QR_CODE, BarcodeFormat.DATA_MATRIX, BarcodeFormat.AZTEC
             )
             val w = if (isSquare) minOf(width, height) else width
             val h = if (isSquare) minOf(width, height) else height
-            
+
             val hints = mapOf(EncodeHintType.MARGIN to 1)
             val bitMatrix = MultiFormatWriter().encode(value, format, w, h, hints)
-            
+
             val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
             for (x in 0 until w) {
                 for (y in 0 until h) {
@@ -264,24 +407,5 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
             android.util.Log.e("SmartCardWidget", "條碼生成失敗: $e")
             null
         }
-    }
-
-    private fun createOpenAppIntent(context: Context, cardId: String?): PendingIntent {
-        val intent = Intent(context, MainActivity::class.java).apply {
-            if (cardId != null && cardId.isNotEmpty()) {
-                data = Uri.parse("smartcard://card/$cardId")
-            }
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-
-        // 使用安全的 requestCode 避免 PendingIntent 衝突
-        val requestCode = if (cardId != null && cardId.isNotEmpty()) cardId.hashCode() else 0
-
-        return PendingIntent.getActivity(
-            context,
-            requestCode,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
     }
 }
