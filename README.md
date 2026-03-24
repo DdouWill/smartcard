@@ -12,7 +12,9 @@
 
 ## 截圖
 
-> 待補
+| 主畫面 | 儲存確認 |
+|--------|----------|
+| ![主畫面](docs/screenshots/home_with_card.png) | ![確認對話框](docs/screenshots/confirm_dialog.png) |
 
 ## 技術棧
 
