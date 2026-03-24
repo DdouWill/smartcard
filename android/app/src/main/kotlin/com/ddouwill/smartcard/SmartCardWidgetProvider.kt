@@ -105,7 +105,7 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
                     MainActivity::class.java,
                     deepLinkUri
                 )
-                context.startActivity(launchIntent)
+                launchIntent.send()
             }
         }
     }
