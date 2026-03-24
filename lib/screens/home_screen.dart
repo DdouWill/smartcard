@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../app_controller.dart';
 import '../app_router.dart';
@@ -22,6 +23,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _controller.setupWidgetCallbacks(_handleWidgetClick);
     _controller.runLocationDetection();
+    _checkPermissions();
   }
 
   @override
@@ -35,6 +37,66 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       _controller.runLocationDetection();
     }
+  }
+
+  Future<void> _checkPermissions() async {
+    // 延遲一幀，確保 context 可用
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+
+    final location = await Permission.location.status;
+    final notification = await Permission.notification.status;
+
+    final missing = <String>[];
+    if (!location.isGranted) {
+      missing.add('📍 位置權限 — 用於偵測附近店家、自動顯示對應會員卡');
+    }
+    if (!notification.isGranted) {
+      missing.add('🔔 通知權限 — 用於背景定位服務的持續通知');
+    }
+
+    if (missing.isEmpty) return;
+
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('需要授權'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('SmartCard 需要以下權限才能正常運作：'),
+            const SizedBox(height: 12),
+            ...missing.map((m) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(m, style: const TextStyle(fontSize: 14)),
+            )),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('稍後再說'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              // 依序請求權限
+              if (!location.isGranted) {
+                await Permission.location.request();
+              }
+              if (!notification.isGranted) {
+                await Permission.notification.request();
+              }
+              // 權限更新後重新啟動背景服務
+              _controller.startBackgroundUpdates();
+            },
+            child: const Text('前往授權'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _handleWidgetClick(Uri? uri) {
