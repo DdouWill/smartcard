@@ -240,9 +240,30 @@ class _GpsZoneDialogState extends State<_GpsZoneDialog> {
     }
   }
 
+  /// Sanitize text field value: strip non-numeric chars except .- and normalize decimal separator
+  String _sanitizeCoord(String text) {
+    // Replace comma decimal separator with period
+    var s = text.trim().replaceAll(',', '.');
+    // Remove any invisible/non-ASCII characters
+    s = s.replaceAll(RegExp(r'[^\d.\-]'), '');
+    // Remove duplicate dots (keep only first)
+    final parts = s.split('.');
+    if (parts.length > 2) {
+      s = '${parts[0]}.${parts.sublist(1).join('')}';
+    }
+    return s;
+  }
+
   void _confirm() {
-    final lat = double.tryParse(_latController.text.trim());
-    final lng = double.tryParse(_lngController.text.trim());
+    var lat = double.tryParse(_sanitizeCoord(_latController.text));
+    var lng = double.tryParse(_sanitizeCoord(_lngController.text));
+
+    // Auto-swap if lat/lng appear to be reversed
+    if (lat != null && lng != null && lat.abs() > 90 && lng.abs() <= 90) {
+      final tmp = lat;
+      lat = lng;
+      lng = tmp;
+    }
 
     if (lat == null || lat < -90 || lat > 90) {
       setState(() => _errorMessage = '請輸入有效的緯度（-90 ~ 90）');
