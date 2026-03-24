@@ -116,6 +116,60 @@ class BarcodeService {
   }
 
   // ──────────────────────────────────────────
+  // 自動偵測條碼格式
+  // ──────────────────────────────────────────
+
+  /// 根據條碼內容自動偵測可能的格式
+  /// 回傳 null 表示無法判斷
+  static BarcodeFormatType? detectBarcodeFormat(String value) {
+    if (value.isEmpty) return null;
+
+    final isAllDigits = RegExp(r'^\d+$').hasMatch(value);
+
+    if (isAllDigits) {
+      switch (value.length) {
+        case 13:
+          return BarcodeFormatType.ean13;
+        case 8:
+          return BarcodeFormatType.ean8;
+        case 12:
+          return BarcodeFormatType.upca;
+      }
+    }
+
+    // 全大寫英數（含數字）→ Code39
+    if (RegExp(r'^[A-Z0-9 \-.$\/+%]+$').hasMatch(value)) {
+      return BarcodeFormatType.code39;
+    }
+
+    // 英數混合 → Code128
+    if (RegExp(r'^[\x00-\x7F]+$').hasMatch(value)) {
+      return BarcodeFormatType.code128;
+    }
+
+    return null;
+  }
+
+  /// 取得格式的使用者友好顯示名稱
+  static String formatDisplayName(BarcodeFormatType format) {
+    switch (format) {
+      case BarcodeFormatType.ean13: return 'EAN-13';
+      case BarcodeFormatType.ean8: return 'EAN-8';
+      case BarcodeFormatType.upca: return 'UPC-A';
+      case BarcodeFormatType.code128: return 'Code128';
+      case BarcodeFormatType.code39: return 'Code39';
+      case BarcodeFormatType.qr: return 'QR Code';
+      case BarcodeFormatType.pdf417: return 'PDF417';
+      case BarcodeFormatType.aztec: return 'Aztec';
+      case BarcodeFormatType.dataMatrix: return 'DataMatrix';
+      case BarcodeFormatType.itf: return 'ITF';
+      case BarcodeFormatType.upce: return 'UPC-E';
+      case BarcodeFormatType.codabar: return 'Codabar';
+      default: return format.name.toUpperCase();
+    }
+  }
+
+  // ──────────────────────────────────────────
   // 驗證
   // ──────────────────────────────────────────
 

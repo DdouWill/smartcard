@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../app_controller.dart';
+import '../data/known_stores.dart';
 import '../models/app_settings.dart';
 import '../app_router.dart';
 import '../models/member_card.dart';
@@ -63,7 +64,7 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.white,
-        title: Text(widget.card.storeName),
+        title: Text('${getStoreEmoji(widget.card.storeName)} ${widget.card.storeName}'),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
