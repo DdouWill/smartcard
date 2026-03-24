@@ -281,7 +281,7 @@ void main() {
         throwsA(isA<BackupException>()),
       );
 
-      await tempFile.delete();
+      try { await tempFile.delete(); } catch (_) {}
     });
 
     test('傳入過短的 bytes → 拋出 BackupException', () {
@@ -305,7 +305,7 @@ void main() {
         throwsA(isA<BackupException>()),
       );
 
-      await emptyFile.delete();
+      try { await emptyFile.delete(); } catch (_) {}
     });
   });
 }

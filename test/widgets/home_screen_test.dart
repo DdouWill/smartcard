@@ -63,7 +63,8 @@ void main() {
   group('W17: HomeScreen 空狀態', () {
     testWidgets('無卡片時顯示空狀態提示', (tester) async {
       await tester.pumpWidget(buildApp());
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.text('還沒有會員卡'), findsOneWidget);
       expect(find.text('新增會員卡'), findsOneWidget);
@@ -71,7 +72,8 @@ void main() {
 
     testWidgets('無卡片時 FAB 存在', (tester) async {
       await tester.pumpWidget(buildApp());
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.text('新增卡片'), findsOneWidget);
       expect(find.byType(FloatingActionButton), findsOneWidget);
@@ -79,14 +81,16 @@ void main() {
 
     testWidgets('AppBar 標題為 SmartCard', (tester) async {
       await tester.pumpWidget(buildApp());
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.text('SmartCard'), findsOneWidget);
     });
 
     testWidgets('設定按鈕存在', (tester) async {
       await tester.pumpWidget(buildApp());
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.byIcon(Icons.settings), findsOneWidget);
     });
@@ -109,7 +113,8 @@ void main() {
       await controller.initialize();
 
       await tester.pumpWidget(buildApp());
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.text('店家0'), findsOneWidget);
       expect(find.text('店家1'), findsOneWidget);
@@ -128,7 +133,8 @@ void main() {
       await controller.initialize();
 
       await tester.pumpWidget(buildApp());
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.text('唯一店家'), findsOneWidget);
       expect(find.text('還沒有會員卡'), findsNothing);
