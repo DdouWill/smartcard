@@ -77,6 +77,8 @@ void main() {
 
   tearDown(() async {
     teardownChannelMocks();
+    await controller.stopBackgroundUpdates();
+    controller.dispose();
     await db.resetForTesting();
   });
 
