@@ -40,8 +40,7 @@ class AppRouter {
 
     // Deep link URI (smartcard://...) 統一由 HomeWidget plugin 處理
     // 若 Flutter 將 intent URI 當作 route name，直接導向首頁
-    final deepLinkCardId = _parseCardIdFromDeepLink(name);
-    if (deepLinkCardId != null) {
+    if (name.startsWith('smartcard://')) {
       return _buildRoute(routeSettings, const HomeScreen());
     }
 
@@ -89,7 +88,8 @@ class AppRouter {
       return _buildRoute(routeSettings, const HomeScreen());
     }
 
-    return _buildRoute(routeSettings, _NotFoundPage(routeName: name));
+    // 未知路由 fallback 到首頁，避免顯示錯誤頁面
+    return _buildRoute(routeSettings, const HomeScreen());
   }
 
   static Future<void> pushCardDetail(BuildContext context, {required MemberCard card}) {
