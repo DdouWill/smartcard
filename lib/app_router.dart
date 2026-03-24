@@ -18,9 +18,40 @@ class AppRouter {
   static const String editCard = '/edit-card';
   static const String settings = '/settings';
 
+  /// 從 deep link URI（smartcard://card/$cardId）解析出 cardId
+  static String? _parseCardIdFromDeepLink(String uriString) {
+    try {
+      final uri = Uri.parse(uriString);
+      if (uri.scheme == 'smartcard' && uri.host == 'card') {
+        // smartcard://card/$cardId → host=card, pathSegments=[cardId]
+        if (uri.pathSegments.isNotEmpty) return uri.pathSegments.first;
+        // smartcard://card → no cardId
+        return null;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   static Route<dynamic> onGenerateRoute(RouteSettings routeSettings) {
     final name = routeSettings.name ?? '/';
     final args = routeSettings.arguments;
+
+    // 處理 deep link URI（冷啟動時 Flutter 可能將 intent URI 當作 route name）
+    final deepLinkCardId = _parseCardIdFromDeepLink(name);
+    if (deepLinkCardId != null) {
+      final card = AppController().getCardById(deepLinkCardId);
+      if (card != null) {
+        return _buildRoute(
+          routeSettings,
+          CardDetailScreen(card: card),
+          withSlideTransition: true,
+        );
+      }
+      // 卡片不存在（已刪除），gracefully 回到首頁
+      return _buildRoute(routeSettings, const HomeScreen());
+    }
 
     if (name == home) {
       return _buildRoute(routeSettings, const HomeScreen());
@@ -62,6 +93,8 @@ class AppRouter {
           );
         }
       }
+      // cardDetail 路由但找不到卡片 → 回首頁
+      return _buildRoute(routeSettings, const HomeScreen());
     }
 
     return _buildRoute(routeSettings, _NotFoundPage(routeName: name));

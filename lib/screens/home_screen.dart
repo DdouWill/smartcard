@@ -22,7 +22,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _controller.setupWidgetCallbacks(_handleWidgetClick);
+    // 延後 widget callback 設定，確保 Navigator 已就緒
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _controller.setupWidgetCallbacks(_handleWidgetClick);
+    });
     _controller.runLocationDetection();
     _checkPermissions();
     _checkForUpdate();
@@ -110,14 +114,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   void _handleWidgetClick(Uri? uri) {
-    if (uri == null) return;
-    final id = uri.pathSegments.isNotEmpty ? uri.pathSegments.last : null;
-    if (id == null) return;
+    if (uri == null || !mounted) return;
 
-    final card = _controller.getCardById(id);
-    if (card != null && mounted) {
-      AppRouter.pushCardDetail(context, card: card);
+    // 解析 cardId：smartcard://card/$cardId → host=card, pathSegments=[cardId]
+    String? id;
+    if (uri.host == 'card' && uri.pathSegments.isNotEmpty) {
+      id = uri.pathSegments.first;
+    } else if (uri.pathSegments.isNotEmpty) {
+      id = uri.pathSegments.last;
     }
+    if (id == null || id.isEmpty) return;
+
+    // 延後一幀確保 Navigator 狀態穩定
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final card = _controller.getCardById(id!);
+      if (card != null) {
+        AppRouter.pushCardDetail(context, card: card);
+      }
+      // 卡片不存在時不做任何事，留在首頁即可
+    });
   }
 
   @override
