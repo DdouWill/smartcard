@@ -114,7 +114,8 @@ void main() {
     testWidgets('拖拽後順序更新', (tester) async {
       await addTestCards(3);
       await tester.pumpWidget(buildFullApp());
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 1));
 
       // Verify initial order - all 3 cards visible
       expect(find.text('測試店0'), findsOneWidget);
@@ -128,7 +129,8 @@ void main() {
       await gesture.moveBy(const Offset(0, 200));
       await tester.pump();
       await gesture.up();
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 1));
 
       // All cards should still be present (no data loss)
       expect(find.text('測試店0'), findsOneWidget);
@@ -139,11 +141,13 @@ void main() {
     testWidgets('reorder 後 controller 順序更新且持久化', (tester) async {
       await addTestCards(3);
       await tester.pumpWidget(buildFullApp());
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 1));
 
       // Reorder programmatically (simulating drag result)
       await controller.reorderCards(['e2e-2', 'e2e-0', 'e2e-1']);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 1));
 
       expect(controller.cards[0].id, 'e2e-2');
       expect(controller.cards[1].id, 'e2e-0');
