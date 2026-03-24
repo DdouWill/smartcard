@@ -116,6 +116,7 @@ class AppController extends ChangeNotifier {
       await _widgetService.updateWidget(
         matchedCards: result.matchedCards,
         recentCard: mostRecentCard,
+        nearestStore: result.nearestStore,
       );
     } catch (_) {
     } finally {

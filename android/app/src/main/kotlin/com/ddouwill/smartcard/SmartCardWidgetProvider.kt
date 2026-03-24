@@ -200,6 +200,15 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
             views.setViewVisibility(R.id.widget_bottom_bar, View.GONE)
             views.setViewVisibility(R.id.widget_empty_text, View.VISIBLE)
 
+            // 最近門市提示
+            val nearestText = widgetData.getString("nearest_store_text", "") ?: ""
+            if (nearestText.isNotEmpty()) {
+                views.setViewVisibility(R.id.widget_nearest_text, View.VISIBLE)
+                views.setTextViewText(R.id.widget_nearest_text, "📍 最近：$nearestText")
+            } else {
+                views.setViewVisibility(R.id.widget_nearest_text, View.GONE)
+            }
+
             val clickIntent = createOpenAppIntent(context, null)
             views.setOnClickPendingIntent(R.id.widget_empty_text, clickIntent)
         }
@@ -299,6 +308,7 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
         views.setViewVisibility(R.id.widget_barcode_image, View.VISIBLE)
         views.setViewVisibility(R.id.widget_bottom_bar, View.VISIBLE)
         views.setViewVisibility(R.id.widget_empty_text, View.GONE)
+        views.setViewVisibility(R.id.widget_nearest_text, View.GONE)
         views.setTextViewText(R.id.widget_store_name, storeName)
     }
 

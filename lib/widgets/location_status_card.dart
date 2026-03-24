@@ -14,6 +14,7 @@ import 'package:shimmer/shimmer.dart';
 
 import '../models/member_card.dart';
 import '../services/location_service.dart';
+import '../services/store_location_service.dart';
 import '../utils/color_utils.dart';
 import 'barcode_display_widget.dart';
 
@@ -354,39 +355,95 @@ class LocationStatusCard extends StatelessWidget {
   // ──────────────────────────────────────────
 
   Widget _buildNoMatchCard(BuildContext context) {
-    // 如果沒有最近使用卡片，顯示簡單提示
+    // 如果沒有最近使用卡片，顯示簡單提示（含最近門市資訊）
     if (recentCard == null) {
+      final nearest = locationResult?.nearestStore;
       return Card(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.location_off,
-                color: Theme.of(context).colorScheme.outline,
-                size: 16,
+              Row(
+                children: [
+                  Icon(
+                    Icons.location_off,
+                    color: Theme.of(context).colorScheme.outline,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '附近無符合店家',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Text(
-                '附近無符合店家',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.outline,
+              if (nearest != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const SizedBox(width: 24),
+                    Icon(
+                      Icons.near_me,
+                      color: Theme.of(context).colorScheme.outline.withOpacity(0.6),
+                      size: 14,
                     ),
-              ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${nearest.brandName}（${nearest.distanceText}・需在 100m 內）',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.outline.withOpacity(0.8),
+                          ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
       );
     }
 
+    // 最近門市提示
+    final nearest = locationResult?.nearestStore;
+
     // 顯示最近使用卡片（半透明）
     final card = recentCard!;
     final cardColor = parseHexColor(card.cardColor) ??
         Theme.of(context).colorScheme.primaryContainer;
 
-    return Opacity(
-      opacity: 0.7, // 半透明表示非精確匹配
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (nearest != null)
+          Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.near_me,
+                    color: Theme.of(context).colorScheme.outline.withOpacity(0.6),
+                    size: 14,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '最近：${nearest.brandName}（${nearest.distanceText}・需在 100m 內）',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.outline.withOpacity(0.8),
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        Opacity(
+          opacity: 0.7, // 半透明表示非精確匹配
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: InkWell(
@@ -439,6 +496,8 @@ class LocationStatusCard extends StatelessWidget {
           ),
         ),
       ),
+    ),
+      ],
     );
   }
 

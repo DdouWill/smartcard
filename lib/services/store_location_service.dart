@@ -3,6 +3,7 @@
 // 支援 bounding box 5km 粗篩，只載入使用者附近的門市
 
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/services.dart';
 
 import '../models/member_card.dart';
@@ -108,8 +109,113 @@ class StoreLocationService {
     return 1.0 - r2 / 2.0 + r2 * r2 / 24.0;
   }
 
-  /// 清除快取（用於測試或熱重載）
+  /// 最近門市搜尋結果
+  /// [brandName] 品牌名稱, [distance] 距離（公尺）, [zone] 門市座標
+  static const double _defaultSearchRadiusKm = 1.0;
+
+  /// 在所有品牌中找出離使用者最近的門市
+  ///
+  /// [userLat] / [userLng] 使用者當前位置
+  /// [maxDistanceKm] 搜尋半徑上限，預設 1km
+  /// 回傳 null 表示範圍內無門市
+  Future<NearestStoreInfo?> findNearestStore({
+    required double userLat,
+    required double userLng,
+    double maxDistanceKm = _defaultSearchRadiusKm,
+  }) async {
+    final stores = await _loadData();
+
+    double? minDist;
+    String? minBrand;
+    GpsZone? minZone;
+
+    for (final entry in stores.entries) {
+      final brandName = entry.key;
+      final brandData = entry.value as Map<String, dynamic>;
+      final locations = brandData['locations'] as List<dynamic>?;
+      if (locations == null) continue;
+
+      // Bounding box 粗篩
+      final latDelta = maxDistanceKm / _kmPerDegreeLat;
+      final lngDelta =
+          maxDistanceKm / (_kmPerDegreeLat * _cosApprox(userLat));
+      final minLat = userLat - latDelta;
+      final maxLat = userLat + latDelta;
+      final minLng = userLng - lngDelta;
+      final maxLng = userLng + lngDelta;
+
+      for (final loc in locations) {
+        final m = loc as Map<String, dynamic>;
+        final lat = (m['lat'] as num).toDouble();
+        final lng = (m['lng'] as num).toDouble();
+
+        // 粗篩
+        if (lat < minLat || lat > maxLat || lng < minLng || lng > maxLng) {
+          continue;
+        }
+
+        // Haversine 精確距離
+        final dist = _haversineMeters(userLat, userLng, lat, lng);
+        if (dist <= maxDistanceKm * 1000 && (minDist == null || dist < minDist)) {
+          minDist = dist;
+          minBrand = brandName;
+          minZone = GpsZone(
+            latitude: lat,
+            longitude: lng,
+            radiusMeters: (m['radius'] as num?)?.toDouble() ?? 100.0,
+            label: m['name'] as String?,
+          );
+        }
+      }
+    }
+
+    if (minDist == null || minBrand == null || minZone == null) return null;
+
+    return NearestStoreInfo(
+      brandName: minBrand,
+      distanceMeters: minDist,
+      zone: minZone,
+    );
+  }
+
+  /// Haversine 公式計算兩點球面距離（公尺）
+  static double _haversineMeters(
+      double lat1, double lng1, double lat2, double lng2) {
+    const R = 6371000.0;
+    final dLat = (lat2 - lat1) * math.pi / 180.0;
+    final dLng = (lng2 - lng1) * math.pi / 180.0;
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1 * math.pi / 180.0) *
+            math.cos(lat2 * math.pi / 180.0) *
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
+    return R * 2 * math.asin(math.sqrt(a));
+  }
+
+    /// 清除快取（用於測試或熱重載）
   void clearCache() {
     _storesData = null;
+  }
+}
+
+
+/// 最近門市資訊
+class NearestStoreInfo {
+  final String brandName;
+  final double distanceMeters;
+  final GpsZone zone;
+
+  const NearestStoreInfo({
+    required this.brandName,
+    required this.distanceMeters,
+    required this.zone,
+  });
+
+  /// 格式化距離文字
+  String get distanceText {
+    if (distanceMeters < 1000) {
+      return '${distanceMeters.round()}m';
+    }
+    return '${(distanceMeters / 1000).toStringAsFixed(1)}km';
   }
 }

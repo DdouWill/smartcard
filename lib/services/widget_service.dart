@@ -9,6 +9,7 @@ import 'dart:async';
 import 'package:home_widget/home_widget.dart';
 
 import '../models/member_card.dart';
+import 'store_location_service.dart';
 
 /// Widget 顯示模式
 /// 對應 SPEC.md 的 Widget 行為定義
@@ -47,6 +48,7 @@ class WidgetService {
   Future<void> updateWidget({
     required List<MemberCard> matchedCards,
     MemberCard? recentCard,
+    NearestStoreInfo? nearestStore,
   }) async {
     try {
       // 每次資料更新都重設導航索引為 0
@@ -54,7 +56,7 @@ class WidgetService {
 
       if (matchedCards.isEmpty) {
         // 無符合 → 顯示最近使用的卡片
-        await _updateWithNoMatch(recentCard);
+        await _updateWithNoMatch(recentCard, nearestStore);
       } else if (matchedCards.length == 1) {
         // 1 張符合 → 直接顯示條碼
         await _updateWithSingleCard(matchedCards.first);
@@ -69,7 +71,7 @@ class WidgetService {
   }
 
   /// 無符合時：顯示最近使用的卡片
-  Future<void> _updateWithNoMatch(MemberCard? recentCard) async {
+  Future<void> _updateWithNoMatch(MemberCard? recentCard, NearestStoreInfo? nearestStore) async {
     await HomeWidget.saveWidgetData<String>(
       'widget_mode',
       WidgetDisplayMode.noMatch.name,
@@ -87,6 +89,16 @@ class WidgetService {
       await HomeWidget.saveWidgetData<String>('primary_store_name', '');
       await HomeWidget.saveWidgetData<String>('primary_barcode_value', '');
       await HomeWidget.saveWidgetData<String>('primary_card_id', '');
+    }
+
+    // 儲存最近門市資訊供 Widget 顯示
+    if (nearestStore != null) {
+      await HomeWidget.saveWidgetData<String>(
+        'nearest_store_text',
+        '${nearestStore.brandName}（${nearestStore.distanceText}）',
+      );
+    } else {
+      await HomeWidget.saveWidgetData<String>('nearest_store_text', '');
     }
   }
 
