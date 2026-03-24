@@ -160,7 +160,7 @@ class SettingsScreen extends StatelessWidget {
               const ListTile(
                 leading: Icon(Icons.info_outline),
                 title: Text('SmartCard'),
-                subtitle: Text('版本 1.0.0'),
+                subtitle: Text('版本 1.0.4'),
               ),
 
               // 開發者資訊

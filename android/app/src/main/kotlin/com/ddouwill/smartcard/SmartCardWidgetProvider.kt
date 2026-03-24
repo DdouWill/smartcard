@@ -316,9 +316,10 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
             if (bitmap != null) {
                 views.setImageViewBitmap(R.id.widget_barcode_image, bitmap)
             }
-            views.setTextViewText(R.id.widget_barcode_number, storeName.ifEmpty { barcodeValue })
+            // 底部不顯示文字，只保留箭頭
+            views.setViewVisibility(R.id.widget_barcode_number, View.GONE)
         } else {
-            views.setTextViewText(R.id.widget_barcode_number, "")
+            views.setViewVisibility(R.id.widget_barcode_number, View.GONE)
         }
     }
 

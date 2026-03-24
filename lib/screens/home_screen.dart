@@ -17,6 +17,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final _controller = AppController();
+  String? _lastHandledCardId;
+  DateTime? _lastHandledTime;
 
   @override
   void initState() {
@@ -36,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // 延遲讓畫面先渲染完成
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
-    const appVersion = '1.0.0'; // 對應 pubspec.yaml version
+    const appVersion = '1.0.4'; // 對應 pubspec.yaml version
     await UpdateService(currentVersion: appVersion).checkForUpdate(context);
   }
 
@@ -128,6 +130,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // 延後一幀確保 Navigator 狀態穩定
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      // 避免冷啟動時 app_router 和 widgetClicked 重複推入同一張卡（500ms 內同 ID 視為重複）
+      final now = DateTime.now();
+      if (_lastHandledCardId == id &&
+          _lastHandledTime != null &&
+          now.difference(_lastHandledTime!).inMilliseconds < 500) {
+        return;
+      }
+      _lastHandledCardId = id;
+      _lastHandledTime = now;
       final card = _controller.getCardById(id!);
       if (card != null) {
         AppRouter.pushCardDetail(context, card: card);
