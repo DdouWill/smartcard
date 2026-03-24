@@ -54,11 +54,17 @@ class LocationService {
   Future<void> startBackgroundService() async {
     try {
       if (defaultTargetPlatform == TargetPlatform.android) {
-        // 先請求通知權限（Android 13+）
+        // 檢查位置權限 — 未授權就跳過，避免閃退
+        final locationStatus = await Permission.location.status;
+        if (!locationStatus.isGranted) {
+          return;
+        }
+        // 請求通知權限（Android 13+，非必要但影響前台服務通知）
         await requestNotificationPermission();
         await _channel.invokeMethod('startLocationService');
       }
     } catch (_) {
+      // 權限被拒或平台不支援，靜默失敗
     }
   }
 
