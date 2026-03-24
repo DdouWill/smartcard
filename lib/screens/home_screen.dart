@@ -4,6 +4,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../app_controller.dart';
 import '../app_router.dart';
 import '../models/member_card.dart';
+import '../services/update_service.dart';
 import '../widgets/card_widget.dart';
 import '../widgets/location_status_card.dart';
 
@@ -24,6 +25,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _controller.setupWidgetCallbacks(_handleWidgetClick);
     _controller.runLocationDetection();
     _checkPermissions();
+    _checkForUpdate();
+  }
+
+  Future<void> _checkForUpdate() async {
+    // 延遲讓畫面先渲染完成
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+    const appVersion = '1.0.0'; // 對應 pubspec.yaml version
+    await UpdateService(currentVersion: appVersion).checkForUpdate(context);
   }
 
   @override
