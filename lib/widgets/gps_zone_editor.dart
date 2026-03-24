@@ -7,9 +7,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../models/member_card.dart';
+import '../screens/map_picker_screen.dart';
 
 /// GPS 圍欄區域編輯器
 ///
@@ -240,6 +242,33 @@ class _GpsZoneDialogState extends State<_GpsZoneDialog> {
     }
   }
 
+  /// 開啟全螢幕地圖選點
+  Future<void> _openMapPicker() async {
+    // 如果已有座標，帶入地圖初始位置
+    LatLng? initial;
+    final lat = double.tryParse(_sanitizeCoord(_latController.text));
+    final lng = double.tryParse(_sanitizeCoord(_lngController.text));
+    if (lat != null && lng != null && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+      initial = LatLng(lat, lng);
+    }
+
+    final result = await Navigator.push<MapPickerResult>(
+      context,
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => MapPickerScreen(initialPosition: initial),
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _latController.text = result.latitude.toString();
+        _lngController.text = result.longitude.toString();
+        _errorMessage = null;
+      });
+    }
+  }
+
   /// Sanitize text field value: strip non-numeric chars except .- and normalize decimal separator
   String _sanitizeCoord(String text) {
     // Replace comma decimal separator with period
@@ -297,23 +326,43 @@ class _GpsZoneDialogState extends State<_GpsZoneDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 使用目前位置按鈕
-            FilledButton.tonal(
-              onPressed: _isLocating ? null : _useCurrentLocation,
-              child: _isLocating
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Row(
+            // 使用目前位置 / 地圖選點按鈕
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.tonal(
+                    onPressed: _isLocating ? null : _useCurrentLocation,
+                    child: _isLocating
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.my_location, size: 18),
+                              SizedBox(width: 6),
+                              Text('目前位置'),
+                            ],
+                          ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton.tonal(
+                    onPressed: _openMapPicker,
+                    child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.my_location, size: 18),
-                        SizedBox(width: 8),
-                        Text('使用目前位置'),
+                        Text('🗺', style: TextStyle(fontSize: 16)),
+                        SizedBox(width: 6),
+                        Text('地圖選點'),
                       ],
                     ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
 
