@@ -3,53 +3,52 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
-    android:paddingStart="10dp"
-    android:paddingEnd="10dp"
-    android:paddingTop="6dp"
-    android:paddingBottom="6dp"
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp"
     android:gravity="center_vertical"
     android:background="@android:color/white">
 
-    <!-- App icon（左側，垂直置中） -->
-    <ImageView
-        android:id="@+id/widget_app_icon"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginEnd="10dp"
-        android:src="@mipmap/ic_launcher"
-        android:contentDescription="SmartCard" />
-
-    <!-- 條碼區域（主體） -->
+    <!-- 左側：icon + 店名（垂直堆疊） -->
     <LinearLayout
-        android:layout_width="0dp"
+        android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:layout_weight="1"
         android:orientation="vertical"
-        android:gravity="center">
+        android:gravity="center"
+        android:layout_marginEnd="12dp">
 
-        <!-- 店名（條碼上方） -->
+        <ImageView
+            android:id="@+id/widget_app_icon"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:src="@mipmap/ic_launcher"
+            android:contentDescription="SmartCard" />
+
         <TextView
             android:id="@+id/widget_store_name"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="2dp"
+            android:layout_marginTop="2dp"
             android:textSize="11sp"
-            android:textColor="#666666"
+            android:textColor="#444444"
+            android:textStyle="bold"
             android:maxLines="1"
+            android:maxWidth="56dp"
             android:ellipsize="end"
             android:gravity="center"
             android:visibility="gone" />
-
-        <!-- 條碼圖片（佔滿剩餘空間） -->
-        <ImageView
-            android:id="@+id/widget_barcode_image"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:scaleType="fitCenter"
-            android:visibility="gone"
-            android:contentDescription="條碼" />
     </LinearLayout>
+
+    <!-- 右側：條碼（主體，佔滿剩餘空間） -->
+    <ImageView
+        android:id="@+id/widget_barcode_image"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:scaleType="fitCenter"
+        android:visibility="gone"
+        android:contentDescription="條碼" />
 
     <!-- 隱藏的 title -->
     <TextView
