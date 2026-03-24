@@ -1,7 +1,7 @@
 // ============================================================
 // AddCardScreen — 新增卡片頁面
 // ============================================================
-// 提供 相機掃描、圖片辨識、手動輸入 三種模式。
+// 提供 圖片辨識、手動輸入 兩種模式。
 // 使用 TabView 進行功能切換，並實作 Hero 動畫過場。
 // ============================================================
 
@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 import 'package:image_picker/image_picker.dart' show ImagePicker, ImageSource;
-import 'package:mobile_scanner/mobile_scanner.dart' as ms;
 
 import '../app_controller.dart';
 import '../models/member_card.dart';
@@ -22,7 +21,7 @@ import '../widgets/gps_zone_editor.dart';
 
 /// 新增卡片頁面
 ///
-/// 提供三種條碼輸入方式，整合顏色選擇、SSID 關鍵字與條碼即時預覽。
+/// 提供兩種條碼輸入方式，整合顏色選擇、SSID 關鍵字與條碼即時預覽。
 class AddCardScreen extends StatefulWidget {
   final MemberCard? editingCard;
   const AddCardScreen({super.key, this.editingCard});
@@ -72,7 +71,7 @@ class _AddCardScreenState extends State<AddCardScreen>
   final _barcodeService = BarcodeService();
   final _uuid = const Uuid();
 
-  // Tab 控制器（三種輸入方式）
+  // Tab 控制器（兩種輸入方式）
   late final TabController _tabController;
 
   // 表單 Key
@@ -99,12 +98,10 @@ class _AddCardScreenState extends State<AddCardScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
 
-    // 監聽條碼輸入，即時更新預覽
-    _barcodeValueController.addListener(() {
-      setState(() => _previewBarcodeValue = _barcodeValueController.text.trim());
-    });
+    // 監聽條碼輸入，即時更新預覽 + EAN-13 自動補 check digit
+    _barcodeValueController.addListener(_onBarcodeValueChanged);
 
     // 編輯模式：預填現有卡片資料
     if (_isEditing) {
@@ -124,13 +121,12 @@ class _AddCardScreenState extends State<AddCardScreen>
       )).toList();
       _previewBarcodeValue = card.barcodeValue;
       // 編輯模式直接跳到手動輸入 Tab
-      _tabController.index = 2;
+      _tabController.index = 1;
     }
   }
 
   @override
   void dispose() {
-    _scannerController?.dispose();
     _tabController.dispose();
     _storeNameController.dispose();
     _barcodeValueController.dispose();
@@ -145,7 +141,6 @@ class _AddCardScreenState extends State<AddCardScreen>
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(icon: Icon(Icons.camera_alt), text: '掃描'),
             Tab(icon: Icon(Icons.image), text: '圖片辨識'),
             Tab(icon: Icon(Icons.keyboard), text: '手動輸入'),
           ],
@@ -155,12 +150,11 @@ class _AddCardScreenState extends State<AddCardScreen>
         key: _formKey,
         child: Column(
           children: [
-            // ── 三種輸入方式 Tab 內容 ──
+            // ── 兩種輸入方式 Tab 內容 ──
             Expanded(
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _buildCameraScanTab(),
                   _buildImageScanTab(),
                   _buildManualInputTab(),
                 ],
@@ -179,126 +173,7 @@ class _AddCardScreenState extends State<AddCardScreen>
   }
 
   // ──────────────────────────────────────────
-  // Tab 1：相機掃描
-  // ──────────────────────────────────────────
-
-  ms.MobileScannerController? _scannerController;
-  bool _scannerPaused = false;
-
-  Widget _buildCameraScanTab() {
-    _scannerController ??= ms.MobileScannerController(
-      detectionSpeed: ms.DetectionSpeed.normal,
-      facing: ms.CameraFacing.back,
-      torchEnabled: false,
-    );
-
-    return Stack(
-      children: [
-        // 相機預覽
-        ms.MobileScanner(
-          controller: _scannerController!,
-          onDetect: _onBarcodeDetected,
-        ),
-        // 掃描框 overlay
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.white54, width: 1),
-          ),
-        ),
-        // 頂部工具列
-        Positioned(
-          top: 16,
-          right: 16,
-          child: Row(
-            children: [
-              // 手電筒
-              IconButton(
-                icon: Icon(
-                  _scannerController!.torchEnabled ? Icons.flash_on : Icons.flash_off,
-                  color: Colors.white,
-                ),
-                onPressed: () => _scannerController!.toggleTorch(),
-              ),
-              // 切換前後鏡頭
-              IconButton(
-                icon: const Icon(Icons.cameraswitch, color: Colors.white),
-                onPressed: () => _scannerController!.switchCamera(),
-              ),
-            ],
-          ),
-        ),
-        // 底部提示
-        Positioned(
-          bottom: 24,
-          left: 24,
-          right: 24,
-          child: Text(
-            _scannerPaused ? '已偵測到條碼' : '對準條碼自動掃描',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              shadows: [Shadow(blurRadius: 8, color: Colors.black)],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _onBarcodeDetected(ms.BarcodeCapture capture) {
-    if (_scannerPaused) return;
-    final barcode = capture.barcodes.firstOrNull;
-    if (barcode == null || barcode.rawValue == null) return;
-
-    setState(() => _scannerPaused = true);
-    _scannerController?.stop();
-
-    final value = barcode.rawValue!;
-    final format = _msFormatToLocal(barcode.format);
-
-    // 預填到表單
-    _barcodeValueController.text = value;
-    _scannedValue = value;
-    _scannedFormat = format;
-    _selectedFormat = format;
-
-    // 顯示結果 + 跳到手動輸入完善資料
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('偵測到條碼：$value'),
-        action: SnackBarAction(
-          label: '重新掃描',
-          onPressed: _resumeScanner,
-        ),
-      ),
-    );
-
-    // 切到手動輸入 Tab 讓使用者填店名
-    _tabController.animateTo(2);
-  }
-
-  void _resumeScanner() {
-    setState(() => _scannerPaused = false);
-    _scannerController?.start();
-  }
-
-  BarcodeFormatType _msFormatToLocal(ms.BarcodeFormat format) {
-    switch (format) {
-      case ms.BarcodeFormat.ean13: return BarcodeFormatType.ean13;
-      case ms.BarcodeFormat.ean8: return BarcodeFormatType.ean8;
-      case ms.BarcodeFormat.qrCode: return BarcodeFormatType.qr;
-      case ms.BarcodeFormat.code128: return BarcodeFormatType.code128;
-      case ms.BarcodeFormat.code39: return BarcodeFormatType.code39;
-      case ms.BarcodeFormat.pdf417: return BarcodeFormatType.pdf417;
-      case ms.BarcodeFormat.dataMatrix: return BarcodeFormatType.dataMatrix;
-      case ms.BarcodeFormat.aztec: return BarcodeFormatType.aztec;
-      default: return BarcodeFormatType.code128;
-    }
-  }
-
-  // ──────────────────────────────────────────
-  // Tab 2：圖片辨識
+  // Tab 1：圖片辨識
   // ──────────────────────────────────────────
 
   Widget _buildImageScanTab() {
@@ -307,37 +182,6 @@ class _AddCardScreenState extends State<AddCardScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // 圖片預覽佔位
-          Container(
-            width: double.infinity,
-            height: 200,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color:
-                    Theme.of(context).colorScheme.outline.withOpacity( 0.3),
-              ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.image_outlined,
-                  size: 64,
-                  color: Theme.of(context).colorScheme.outline,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '選取圖片後顯示於此',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -382,7 +226,7 @@ class _AddCardScreenState extends State<AddCardScreen>
   }
 
   // ──────────────────────────────────────────
-  // Tab 3：手動輸入
+  // Tab 2：手動輸入
   // ──────────────────────────────────────────
 
   Widget _buildManualInputTab() {
@@ -535,6 +379,22 @@ class _AddCardScreenState extends State<AddCardScreen>
     );
   }
 
+  /// 條碼輸入監聽：即時更新預覽 + EAN-13 自動補 check digit
+  void _onBarcodeValueChanged() {
+    final text = _barcodeValueController.text.trim();
+    if (_selectedFormat == BarcodeFormatType.ean13 &&
+        RegExp(r'^\d{12}$').hasMatch(text)) {
+      final full = BarcodeService.calculateEAN13CheckDigit(text);
+      _barcodeValueController.removeListener(_onBarcodeValueChanged);
+      _barcodeValueController.text = full;
+      _barcodeValueController.selection = TextSelection.fromPosition(
+        TextPosition(offset: full.length),
+      );
+      _barcodeValueController.addListener(_onBarcodeValueChanged);
+    }
+    setState(() => _previewBarcodeValue = _barcodeValueController.text.trim());
+  }
+
   /// 條碼格式選擇器（Wrap 排列）
   Widget _buildFormatSelector() {
     const commonFormats = [
@@ -634,11 +494,6 @@ class _AddCardScreenState extends State<AddCardScreen>
   // 動作處理
   // ──────────────────────────────────────────
 
-  /// 開啟相機掃描（已由即時預覽取代，保留方法避免引用錯誤）
-  Future<void> _startCameraScanner() async {
-    _tabController.animateTo(0); // 切回掃描 Tab
-  }
-
   /// 從相簿選取圖片
   Future<void> _pickImageFromGallery() async {
     await _pickAndScanImage(ImageSource.gallery);
@@ -670,15 +525,24 @@ class _AddCardScreenState extends State<AddCardScreen>
         setState(() {
           _scannedValue = result.value;
           _scannedFormat = result.format;
+          _barcodeValueController.text = result.value;
+          _selectedFormat = result.format;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('辨識成功：${result.value}')),
         );
+        // 自動跳轉到手動輸入 Tab 讓使用者補填店名
+        _tabController.animateTo(1);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result.errorMessage ?? '辨識失敗'),
             backgroundColor: Theme.of(context).colorScheme.error,
+            action: SnackBarAction(
+              label: '手動輸入',
+              textColor: Colors.white,
+              onPressed: () => _tabController.animateTo(1),
+            ),
           ),
         );
       }
@@ -695,13 +559,13 @@ class _AddCardScreenState extends State<AddCardScreen>
       setState(() => _selectedFormat = _scannedFormat!);
     }
     // 切換到手動輸入 Tab 讓使用者補填店家名稱
-    _tabController.animateTo(2);
+    _tabController.animateTo(1);
   }
 
   /// 儲存卡片（帶確認對話框）
   Future<void> _saveCard() async {
     // 手動輸入模式需驗證表單
-    if (_tabController.index == 2 &&
+    if (_tabController.index == 1 &&
         !(_formKey.currentState?.validate() ?? false)) {
       return;
     }
@@ -724,7 +588,7 @@ class _AddCardScreenState extends State<AddCardScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('請切換到「手動輸入」填入店家名稱')),
       );
-      _tabController.animateTo(2);
+      _tabController.animateTo(1);
       return;
     }
 

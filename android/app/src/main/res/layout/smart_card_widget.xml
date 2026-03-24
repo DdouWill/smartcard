@@ -3,59 +3,60 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
-    android:padding="8dp"
+    android:paddingStart="10dp"
+    android:paddingEnd="14dp"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp"
     android:gravity="center_vertical"
     android:background="@android:color/white">
 
-    <!-- App icon -->
-    <ImageView
-        android:id="@+id/widget_app_icon"
-        android:layout_width="28dp"
-        android:layout_height="28dp"
-        android:src="@mipmap/ic_launcher"
-        android:contentDescription="SmartCard" />
-
-    <!-- 店名 + 狀態文字 -->
+    <!-- 左側：icon + 店名 -->
     <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
+        android:layout_width="72dp"
+        android:layout_height="match_parent"
         android:orientation="vertical"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp">
+        android:gravity="center"
+        android:layout_marginEnd="10dp">
 
-        <TextView
-            android:id="@+id/widget_title"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="SmartCard"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:textColor="#333333"
-            android:maxLines="1"
-            android:ellipsize="end" />
+        <ImageView
+            android:id="@+id/widget_app_icon"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:src="@mipmap/ic_launcher"
+            android:contentDescription="SmartCard" />
 
         <TextView
             android:id="@+id/widget_store_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
             android:textSize="11sp"
-            android:textColor="#666666"
+            android:textColor="#333333"
+            android:textStyle="bold"
             android:maxLines="1"
             android:ellipsize="end"
+            android:gravity="center"
             android:visibility="gone" />
     </LinearLayout>
 
-    <!-- 條碼 -->
+    <!-- 條碼（主體） -->
     <ImageView
         android:id="@+id/widget_barcode_image"
-        android:layout_width="120dp"
+        android:layout_width="0dp"
         android:layout_height="match_parent"
+        android:layout_weight="1"
         android:scaleType="fitCenter"
         android:visibility="gone"
         android:contentDescription="條碼" />
 
-    <!-- 多卡按鈕容器（需要時展開） -->
+    <!-- 隱藏的 title（Kotlin 相容） -->
+    <TextView
+        android:id="@+id/widget_title"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone" />
+
+    <!-- 多卡按鈕容器 -->
     <LinearLayout
         android:id="@+id/widget_multi_card_container"
         android:layout_width="wrap_content"
