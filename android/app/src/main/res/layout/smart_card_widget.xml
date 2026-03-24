@@ -16,7 +16,7 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center"
-        android:layout_marginEnd="6dp">
+        android:layout_marginEnd="10dp">
 
         <ImageView
             android:id="@+id/widget_app_icon"
@@ -38,15 +38,6 @@
             android:gravity="center"
             android:visibility="gone" />
     </LinearLayout>
-
-    <!-- 分隔線 -->
-    <View
-        android:layout_width="1dp"
-        android:layout_height="match_parent"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
-        android:layout_marginEnd="8dp"
-        android:background="#E0E0E0" />
 
     <!-- 條碼（主體） -->
     <ImageView
