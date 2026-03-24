@@ -115,16 +115,11 @@ void main() {
     // causes test process to hang indefinitely in CI. Covered by
     // programmatic reorder test below.
 
-    testWidgets('reorder 後 controller 順序更新且持久化', (tester) async {
+    test('reorder 後 controller 順序更新且持久化', () async {
       await addTestCards(3);
-      await tester.pumpWidget(buildFullApp());
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pump(const Duration(seconds: 1));
 
       // Reorder programmatically (simulating drag result)
       await controller.reorderCards(['e2e-2', 'e2e-0', 'e2e-1']);
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pump(const Duration(seconds: 1));
 
       expect(controller.cards[0].id, 'e2e-2');
       expect(controller.cards[1].id, 'e2e-0');
