@@ -29,11 +29,29 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
 
     companion object {
         const val ACTION_WIDGET_CLICK = "com.ddouwill.smartcard.WIDGET_CLICK"
+        const val ACTION_LOCATION_UPDATE = "com.ddouwill.smartcard.LOCATION_UPDATE"
         const val EXTRA_CARD_ID = "card_id"
 
         const val MODE_NO_MATCH = "noMatch"
         const val MODE_SINGLE_CARD = "singleCard"
         const val MODE_MULTIPLE_CARDS = "multipleCards"
+
+        /**
+         * 強制更新所有已註冊的 SmartCard Widget
+         * 由 LocationForegroundService 在位置變更時呼叫
+         */
+        fun updateAllWidgets(context: Context) {
+            val appWidgetManager = AppWidgetManager.getInstance(context)
+            val componentName = android.content.ComponentName(context, SmartCardWidgetProvider::class.java)
+            val widgetIds = appWidgetManager.getAppWidgetIds(componentName)
+            if (widgetIds.isNotEmpty()) {
+                val intent = Intent(context, SmartCardWidgetProvider::class.java).apply {
+                    action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, widgetIds)
+                }
+                context.sendBroadcast(intent)
+            }
+        }
     }
 
     override fun onUpdate(
@@ -48,6 +66,11 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
+
+        if (intent.action == ACTION_LOCATION_UPDATE) {
+            updateAllWidgets(context)
+            return
+        }
 
         if (intent.action == ACTION_WIDGET_CLICK) {
             val cardId = intent.getStringExtra(EXTRA_CARD_ID)

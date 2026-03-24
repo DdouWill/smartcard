@@ -47,6 +47,7 @@
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.ddouwill.smartcard.WIDGET_CLICK" />
+                <action android:name="com.ddouwill.smartcard.LOCATION_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"

@@ -102,14 +102,15 @@ class LocationForegroundService : Service() {
 
     private fun onLocationChanged(location: Location) {
         Log.d(TAG, "位置已更新: ${location.latitude}, ${location.longitude}")
-        
+
         // 發送廣播給 Flutter (如果 App 在前台或 Engine 存活)
         val intent = Intent("com.ddouwill.smartcard.LOCATION_UPDATE")
         intent.putExtra("latitude", location.latitude)
         intent.putExtra("longitude", location.longitude)
         sendBroadcast(intent)
-        
-        // 此服務主要維持背景存活，具體邏輯由 Flutter 端或 WidgetService 處理
+
+        // 直接觸發 Widget 重繪，讓桌面小工具讀取最新 SharedPreferences 資料
+        SmartCardWidgetProvider.updateAllWidgets(this)
     }
 
     private fun createNotification(): Notification {
