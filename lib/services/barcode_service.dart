@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:mobile_scanner/mobile_scanner.dart' as ms;
 
 import '../models/member_card.dart';
+import 'database_service.dart';
 
 /// 條碼掃描結果
 class BarcodeScanResult {
@@ -158,6 +159,43 @@ class BarcodeService {
     }
     final checksum = (10 - (sum % 10)) % 10;
     return checksum == (int.tryParse(ean13[12]) ?? -1);
+  }
+
+  // ──────────────────────────────────────────
+  // 唯一條碼驗證
+  // ──────────────────────────────────────────
+
+  /// 檢查條碼是否已被其他卡片使用
+  ///
+  /// [barcode] 要檢查的條碼值
+  /// [excludeCardId] 排除的卡片 ID（編輯模式時排除自身）
+  /// 回傳 null 表示無重複，否則回傳衝突的店名
+  Future<String?> findDuplicateBarcode(
+    String barcode, {
+    String? excludeCardId,
+  }) async {
+    if (barcode.trim().isEmpty) return null;
+
+    final cards = DatabaseService().getAllCards();
+    for (final card in cards) {
+      if (card.id == excludeCardId) continue;
+      if (card.barcodeValue == barcode) {
+        return card.storeName;
+      }
+    }
+    return null;
+  }
+
+  /// 檢查條碼是否重複（簡化版，回傳布林值）
+  Future<bool> isDuplicateBarcode(
+    String barcode, {
+    String? excludeCardId,
+  }) async {
+    final duplicate = await findDuplicateBarcode(
+      barcode,
+      excludeCardId: excludeCardId,
+    );
+    return duplicate != null;
   }
 
   // ──────────────────────────────────────────
