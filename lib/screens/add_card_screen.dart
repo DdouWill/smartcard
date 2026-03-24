@@ -67,6 +67,9 @@ class _AddCardScreenState extends State<AddCardScreen>
   // 即時條碼預覽觸發器
   String _previewBarcodeValue = '';
 
+  // 條碼格式自動偵測提示
+  BarcodeFormatType? _detectedFormat;
+
   bool get _isEditing => widget.editingCard != null;
 
   // 已存在卡片的常見店家名（用於過濾 dropdown）
@@ -223,45 +226,8 @@ class _AddCardScreenState extends State<AddCardScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 店家名稱下拉選單
-          DropdownButtonFormField<String>(
-            value: _selectedStoreKey,
-            decoration: const InputDecoration(
-              labelText: '店家名稱 *',
-              prefixIcon: Icon(Icons.store),
-              border: OutlineInputBorder(),
-            ),
-            isExpanded: true,
-            items: [
-              ...knownStores
-                  .where((store) => !_existingStoreNames.contains(store.name))
-                  .map((store) => DropdownMenuItem(
-                    value: store.name,
-                    child: Text(store.name),
-                  )),
-              const DropdownMenuItem(
-                value: _kOtherStore,
-                child: Text('其他'),
-              ),
-            ],
-            onChanged: (value) {
-              setState(() {
-                _selectedStoreKey = value;
-                if (value != null && value != _kOtherStore) {
-                  _storeNameController.text = value;
-                  // 自動切換條碼格式
-                  final store = knownStores.firstWhere((s) => s.name == value);
-                  if (store.defaultBarcodeFormat != null) {
-                    _selectedFormat = _parseBarcodeFormat(store.defaultBarcodeFormat!);
-                    _previewBarcodeValue = _barcodeValueController.text.trim();
-                  }
-                } else {
-                  _storeNameController.text = '';
-                }
-              });
-            },
-            validator: (v) => (v == null) ? '請選擇店家' : null,
-          ),
+          // 店家名稱搜尋選單
+          _buildStoreAutocomplete(),
           const SizedBox(height: 16),
 
           // 「其他」→ 自訂店名輸入
@@ -302,6 +268,60 @@ class _AddCardScreenState extends State<AddCardScreen>
               );
             },
           ),
+
+          // ── 條碼格式自動偵測提示 ──
+          if (_detectedFormat != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Theme.of(context)
+                    .colorScheme
+                    .tertiaryContainer
+                    .withOpacity(0.5),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.auto_awesome,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.tertiary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '偵測為 ${BarcodeService.formatDisplayName(_detectedFormat!)}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onTertiaryContainer,
+                        ),
+                  ),
+                  const Spacer(),
+                  if (_detectedFormat != _selectedFormat)
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _selectedFormat = _detectedFormat!;
+                          _previewBarcodeValue =
+                              _barcodeValueController.text.trim();
+                        });
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text('套用'),
+                    ),
+                  if (_detectedFormat == _selectedFormat)
+                    Icon(
+                      Icons.check_circle_outline,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.tertiary,
+                    ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
 
           // ── 即時條碼預覽 ──
@@ -385,6 +405,132 @@ class _AddCardScreenState extends State<AddCardScreen>
     );
   }
 
+  /// 搜尋式店家選擇器（Autocomplete）
+  Widget _buildStoreAutocomplete() {
+    // 可選的店家（過濾已有卡片的）
+    final availableStores = knownStores
+        .where((store) => !_existingStoreNames.contains(store.name))
+        .toList();
+
+    // 「其他」的虛擬項目
+    const otherEntry = _kOtherStore;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Autocomplete<String>(
+          initialValue: _selectedStoreKey != null && _selectedStoreKey != _kOtherStore
+              ? TextEditingValue(text: _selectedStoreKey!)
+              : _selectedStoreKey == _kOtherStore
+                  ? const TextEditingValue(text: '其他')
+                  : TextEditingValue.empty,
+          optionsBuilder: (textEditingValue) {
+            final query = textEditingValue.text.trim().toLowerCase();
+            final filtered = <String>[];
+
+            if (query.isEmpty) {
+              // 沒輸入時顯示全部
+              filtered.addAll(availableStores.map((s) => s.name));
+            } else {
+              // 模糊匹配：中英文皆可
+              for (final store in availableStores) {
+                final nameLower = store.name.toLowerCase();
+                if (nameLower.contains(query) || query.contains(nameLower)) {
+                  filtered.add(store.name);
+                }
+              }
+            }
+
+            // 「其他」永遠在最底部
+            filtered.add(otherEntry);
+            return filtered;
+          },
+          displayStringForOption: (option) =>
+              option == _kOtherStore ? '其他' : option,
+          fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+            return TextFormField(
+              controller: controller,
+              focusNode: focusNode,
+              decoration: InputDecoration(
+                labelText: '店家名稱 *',
+                hintText: '搜尋或選擇店家',
+                prefixIcon: _selectedStoreKey != null && _selectedStoreKey != _kOtherStore
+                    ? Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Text(
+                          getStoreEmoji(_selectedStoreKey!),
+                          style: const TextStyle(fontSize: 20),
+                        ),
+                      )
+                    : _selectedStoreKey == _kOtherStore
+                        ? const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: Text('💳', style: TextStyle(fontSize: 20)),
+                          )
+                        : const Icon(Icons.store),
+                border: const OutlineInputBorder(),
+                suffixIcon: const Icon(Icons.arrow_drop_down),
+              ),
+              onFieldSubmitted: (_) => onFieldSubmitted(),
+              validator: (_) =>
+                  _selectedStoreKey == null ? '請選擇店家' : null,
+            );
+          },
+          optionsViewBuilder: (context, onSelected, options) {
+            return Align(
+              alignment: Alignment.topLeft,
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(8),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: 280,
+                    maxWidth: constraints.maxWidth,
+                  ),
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    shrinkWrap: true,
+                    itemCount: options.length,
+                    itemBuilder: (context, index) {
+                      final option = options.elementAt(index);
+                      final isOther = option == _kOtherStore;
+                      final emoji = isOther
+                          ? '💳'
+                          : getStoreEmoji(option);
+
+                      return ListTile(
+                        leading: Text(emoji, style: const TextStyle(fontSize: 22)),
+                        title: Text(isOther ? '其他（自訂店名）' : option),
+                        dense: true,
+                        onTap: () => onSelected(option),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
+          onSelected: (value) {
+            setState(() {
+              _selectedStoreKey = value;
+              if (value != _kOtherStore) {
+                _storeNameController.text = value;
+                // 自動切換條碼格式
+                final store = knownStores.firstWhere((s) => s.name == value);
+                if (store.defaultBarcodeFormat != null) {
+                  _selectedFormat =
+                      _parseBarcodeFormat(store.defaultBarcodeFormat!);
+                  _previewBarcodeValue = _barcodeValueController.text.trim();
+                }
+              } else {
+                _storeNameController.text = '';
+              }
+            });
+          },
+        );
+      },
+    );
+  }
+
   /// 條碼輸入監聽：即時更新預覽 + EAN-13 自動補 check digit
   void _onBarcodeValueChanged() {
     final text = _barcodeValueController.text.trim();
@@ -398,7 +544,11 @@ class _AddCardScreenState extends State<AddCardScreen>
       );
       _barcodeValueController.addListener(_onBarcodeValueChanged);
     }
-    setState(() => _previewBarcodeValue = _barcodeValueController.text.trim());
+    final currentText = _barcodeValueController.text.trim();
+    setState(() {
+      _previewBarcodeValue = currentText;
+      _detectedFormat = BarcodeService.detectBarcodeFormat(currentText);
+    });
   }
 
   /// 條碼格式選擇器（Wrap 排列）
@@ -736,7 +886,7 @@ class _AddCardScreenState extends State<AddCardScreen>
             children: [
               // 店家資訊
               Text(
-                storeName,
+                '${getStoreEmoji(storeName)} $storeName',
                 style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
