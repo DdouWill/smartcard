@@ -38,37 +38,10 @@ class AppRouter {
     final name = routeSettings.name ?? '/';
     final args = routeSettings.arguments;
 
-    // 處理 deep link URI（冷啟動時 Flutter 可能將 intent URI 當作 route name）
+    // Deep link URI (smartcard://...) 統一由 HomeWidget plugin 處理
+    // 若 Flutter 將 intent URI 當作 route name，直接導向首頁
     final deepLinkCardId = _parseCardIdFromDeepLink(name);
     if (deepLinkCardId != null) {
-      final card = AppController().getCardById(deepLinkCardId);
-      if (card != null) {
-        // 用 Navigator builder 先推 HomeScreen 再推 CardDetail，確保有返回鍵
-        return MaterialPageRoute(
-          settings: routeSettings,
-          builder: (context) {
-            // 延遲推入 CardDetail，讓 HomeScreen 先建立
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              Navigator.of(context).push(
-                PageRouteBuilder(
-                  pageBuilder: (ctx, anim, secAnim) => CardDetailScreen(card: card),
-                  transitionsBuilder: (ctx, anim, secAnim, child) {
-                    return SlideTransition(
-                      position: anim.drive(
-                        Tween(begin: const Offset(0.0, 1.0), end: Offset.zero)
-                            .chain(CurveTween(curve: Curves.easeInOutQuart)),
-                      ),
-                      child: child,
-                    );
-                  },
-                ),
-              );
-            });
-            return const HomeScreen();
-          },
-        );
-      }
-      // 卡片不存在（已刪除），gracefully 回到首頁
       return _buildRoute(routeSettings, const HomeScreen());
     }
 
