@@ -2,83 +2,84 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="12dp"
+    android:orientation="horizontal"
+    android:padding="8dp"
+    android:gravity="center_vertical"
     android:background="@android:color/white">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginBottom="8dp">
+    <!-- App icon -->
+    <ImageView
+        android:id="@+id/widget_app_icon"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:src="@mipmap/ic_launcher"
+        android:contentDescription="SmartCard" />
 
-        <ImageView
-            android:id="@+id/widget_app_icon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@mipmap/ic_launcher"
-            android:contentDescription="SmartCard" />
+    <!-- 店名 + 狀態文字 -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp">
 
         <TextView
             android:id="@+id/widget_title"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="8dp"
             android:text="SmartCard"
-            android:textSize="14sp"
+            android:textSize="13sp"
             android:textStyle="bold"
             android:textColor="#333333"
             android:maxLines="1"
             android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/widget_store_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="11sp"
+            android:textColor="#666666"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:visibility="gone" />
     </LinearLayout>
 
+    <!-- 條碼 -->
     <ImageView
         android:id="@+id/widget_barcode_image"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_width="120dp"
+        android:layout_height="match_parent"
         android:scaleType="fitCenter"
         android:visibility="gone"
         android:contentDescription="條碼" />
 
-    <TextView
-        android:id="@+id/widget_store_name"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="12sp"
-        android:textColor="#666666"
-        android:maxLines="1"
-        android:ellipsize="end"
-        android:gravity="center"
-        android:layout_marginTop="4dp"
-        android:visibility="gone" />
-
+    <!-- 多卡按鈕容器（需要時展開） -->
     <LinearLayout
         android:id="@+id/widget_multi_card_container"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:gravity="center"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
         android:visibility="gone">
 
-        <Button android:id="@+id/widget_card_btn_0" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:visibility="gone" />
-        <Button android:id="@+id/widget_card_btn_1" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:visibility="gone" />
-        <Button android:id="@+id/widget_card_btn_2" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:visibility="gone" />
-        <Button android:id="@+id/widget_card_btn_3" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:visibility="gone" />
-        <Button android:id="@+id/widget_card_btn_4" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:visibility="gone" />
+        <Button android:id="@+id/widget_card_btn_0" android:layout_width="wrap_content" android:layout_height="32dp" android:textSize="10sp" android:visibility="gone" android:layout_marginEnd="4dp" />
+        <Button android:id="@+id/widget_card_btn_1" android:layout_width="wrap_content" android:layout_height="32dp" android:textSize="10sp" android:visibility="gone" android:layout_marginEnd="4dp" />
+        <Button android:id="@+id/widget_card_btn_2" android:layout_width="wrap_content" android:layout_height="32dp" android:textSize="10sp" android:visibility="gone" android:layout_marginEnd="4dp" />
+        <Button android:id="@+id/widget_card_btn_3" android:layout_width="wrap_content" android:layout_height="32dp" android:textSize="10sp" android:visibility="gone" android:layout_marginEnd="4dp" />
+        <Button android:id="@+id/widget_card_btn_4" android:layout_width="wrap_content" android:layout_height="32dp" android:textSize="10sp" android:visibility="gone" />
     </LinearLayout>
 
+    <!-- 空狀態 -->
     <TextView
         android:id="@+id/widget_empty_text"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
         android:layout_weight="1"
         android:gravity="center"
         android:text="點擊新增會員卡"
-        android:textSize="14sp"
+        android:textSize="12sp"
         android:textColor="#999999"
         android:visibility="gone" />
 
