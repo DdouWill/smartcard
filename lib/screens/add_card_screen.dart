@@ -100,10 +100,8 @@ class _AddCardScreenState extends State<AddCardScreen>
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
 
-    // 監聽條碼輸入，即時更新預覽
-    _barcodeValueController.addListener(() {
-      setState(() => _previewBarcodeValue = _barcodeValueController.text.trim());
-    });
+    // 監聽條碼輸入，即時更新預覽 + EAN-13 自動補 check digit
+    _barcodeValueController.addListener(_onBarcodeValueChanged);
 
     // 編輯模式：預填現有卡片資料
     if (_isEditing) {
@@ -379,6 +377,22 @@ class _AddCardScreenState extends State<AddCardScreen>
         ],
       ),
     );
+  }
+
+  /// 條碼輸入監聽：即時更新預覽 + EAN-13 自動補 check digit
+  void _onBarcodeValueChanged() {
+    final text = _barcodeValueController.text.trim();
+    if (_selectedFormat == BarcodeFormatType.ean13 &&
+        RegExp(r'^\d{12}$').hasMatch(text)) {
+      final full = BarcodeService.calculateEAN13CheckDigit(text);
+      _barcodeValueController.removeListener(_onBarcodeValueChanged);
+      _barcodeValueController.text = full;
+      _barcodeValueController.selection = TextSelection.fromPosition(
+        TextPosition(offset: full.length),
+      );
+      _barcodeValueController.addListener(_onBarcodeValueChanged);
+    }
+    setState(() => _previewBarcodeValue = _barcodeValueController.text.trim());
   }
 
   /// 條碼格式選擇器（Wrap 排列）

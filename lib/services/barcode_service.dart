@@ -137,6 +137,18 @@ class BarcodeService {
     }
   }
 
+  /// Calculate EAN-13 check digit from 12-digit input
+  static String calculateEAN13CheckDigit(String first12) {
+    assert(first12.length == 12);
+    int sum = 0;
+    for (int i = 0; i < 12; i++) {
+      final digit = int.parse(first12[i]);
+      sum += (i % 2 == 0) ? digit : digit * 3;
+    }
+    final checkDigit = (10 - (sum % 10)) % 10;
+    return '$first12$checkDigit';
+  }
+
   bool _validateEan13Checksum(String ean13) {
     if (ean13.length != 13) return false;
     int sum = 0;
