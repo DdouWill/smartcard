@@ -183,4 +183,107 @@ void main() {
       expect(retrieved.updateIntervalMinutes, 10);
     });
   });
+
+  // ──────────────────────────────────────────
+  // U12: DatabaseService reorderCards
+  // ──────────────────────────────────────────
+  group('U12: DatabaseService reorderCards', () {
+    test('3 張卡 → reorder → sortOrder 正確更新', () async {
+      final card1 = MemberCard(
+        id: 'reorder-a', storeName: '店A', barcodeValue: 'A',
+        barcodeFormat: BarcodeFormatType.qr, sortOrder: 0,
+      );
+      final card2 = MemberCard(
+        id: 'reorder-b', storeName: '店B', barcodeValue: 'B',
+        barcodeFormat: BarcodeFormatType.qr, sortOrder: 1,
+      );
+      final card3 = MemberCard(
+        id: 'reorder-c', storeName: '店C', barcodeValue: 'C',
+        barcodeFormat: BarcodeFormatType.qr, sortOrder: 2,
+      );
+
+      await db.addCard(card1);
+      await db.addCard(card2);
+      await db.addCard(card3);
+
+      // 原始順序：A(0), B(1), C(2)
+      var all = db.getAllCards();
+      expect(all[0].storeName, '店A');
+      expect(all[1].storeName, '店B');
+      expect(all[2].storeName, '店C');
+
+      // 重新排序為 C, A, B
+      await db.reorderCards(['reorder-c', 'reorder-a', 'reorder-b']);
+
+      all = db.getAllCards();
+      expect(all[0].storeName, '店C');
+      expect(all[0].sortOrder, 0);
+      expect(all[1].storeName, '店A');
+      expect(all[1].sortOrder, 1);
+      expect(all[2].storeName, '店B');
+      expect(all[2].sortOrder, 2);
+    });
+
+    test('reorder 不存在的 id → 跳過不報錯', () async {
+      final card1 = MemberCard(
+        id: 'reorder-x', storeName: '店X', barcodeValue: 'X',
+        barcodeFormat: BarcodeFormatType.qr, sortOrder: 0,
+      );
+      await db.addCard(card1);
+
+      // 包含不存在的 id
+      await db.reorderCards(['nonexistent', 'reorder-x']);
+
+      final all = db.getAllCards();
+      expect(all.length, 1);
+      expect(all[0].sortOrder, 1); // index 1 in the list
+    });
+  });
+
+  // ──────────────────────────────────────────
+  // U13: DatabaseService Settings
+  // ──────────────────────────────────────────
+  group('U13: DatabaseService Settings 完整', () {
+    test('saveSettings 所有欄位 → getSettings 回傳一致', () async {
+      final settings = AppSettings(
+        enableWifi: false,
+        enableGps: false,
+        updateIntervalMinutes: 30,
+        screenBrightnessMode: 2,
+        showRecentOnEmpty: false,
+        maxWidgetCards: 3,
+      );
+      await db.saveSettings(settings);
+
+      final retrieved = db.getSettings();
+      expect(retrieved.enableWifi, isFalse);
+      expect(retrieved.enableGps, isFalse);
+      expect(retrieved.updateIntervalMinutes, 30);
+      expect(retrieved.screenBrightnessMode, 2);
+      expect(retrieved.showRecentOnEmpty, isFalse);
+      expect(retrieved.maxWidgetCards, 3);
+    });
+
+    test('多次 saveSettings → 最後一次為準', () async {
+      await db.saveSettings(AppSettings(updateIntervalMinutes: 1));
+      await db.saveSettings(AppSettings(updateIntervalMinutes: 10));
+      await db.saveSettings(AppSettings(updateIntervalMinutes: 30));
+
+      final retrieved = db.getSettings();
+      expect(retrieved.updateIntervalMinutes, 30);
+    });
+
+    test('brightnessMode getter 正確轉換', () async {
+      final settings = AppSettings(screenBrightnessMode: 0);
+      await db.saveSettings(settings);
+      final retrieved = db.getSettings();
+      expect(retrieved.brightnessMode, ScreenBrightnessMode.system);
+
+      await db.saveSettings(AppSettings(screenBrightnessMode: 1));
+      expect(db.getSettings().brightnessMode, ScreenBrightnessMode.maximum);
+
+      await db.saveSettings(AppSettings(screenBrightnessMode: 2));
+      expect(db.getSettings().brightnessMode, ScreenBrightnessMode.keepOn);
+    });
+  });
 }

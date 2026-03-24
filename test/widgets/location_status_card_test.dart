@@ -162,4 +162,105 @@ void main() {
       expect(find.byType(ListView), findsOneWidget);
     });
   });
+
+  group('W9: LocationStatusCard 無匹配', () {
+    testWidgets('空列表且無 recentCard → 顯示附近無符合店家', (tester) async {
+      final result = const LocationResult(
+        matchedCards: [],
+        trigger: LocationTrigger.none,
+      );
+
+      await tester.pumpWidget(wrap(
+        LocationStatusCard(
+          locationResult: result,
+          isDetecting: false,
+          onCardTap: (_) {},
+        ),
+      ));
+
+      expect(find.text('附近無符合店家'), findsOneWidget);
+      expect(find.byIcon(Icons.location_off), findsOneWidget);
+    });
+
+    testWidgets('WiFi 觸發但無匹配且無 recentCard → 顯示附近無符合店家', (tester) async {
+      final result = const LocationResult(
+        matchedCards: [],
+        trigger: LocationTrigger.wifi,
+      );
+
+      await tester.pumpWidget(wrap(
+        LocationStatusCard(
+          locationResult: result,
+          isDetecting: false,
+          onCardTap: (_) {},
+        ),
+      ));
+
+      expect(find.text('附近無符合店家'), findsOneWidget);
+    });
+  });
+
+  group('W10: LocationStatusCard 最近卡片', () {
+    testWidgets('無匹配 + 有 recentCard → 顯示半透明最近使用卡片', (tester) async {
+      final recent = createCard(id: 'recent-1', storeName: '最近店家');
+      final result = const LocationResult(
+        matchedCards: [],
+        trigger: LocationTrigger.none,
+      );
+
+      await tester.pumpWidget(wrap(
+        LocationStatusCard(
+          locationResult: result,
+          isDetecting: false,
+          recentCard: recent,
+          onCardTap: (_) {},
+        ),
+      ));
+
+      expect(find.text('最近使用'), findsOneWidget);
+      expect(find.text('最近店家'), findsOneWidget);
+      // Check Opacity widget exists (semi-transparent style)
+      expect(find.byType(Opacity), findsOneWidget);
+    });
+
+    testWidgets('點擊最近卡片觸發 onCardTap', (tester) async {
+      MemberCard? tappedCard;
+      final recent = createCard(id: 'recent-tap', storeName: '最近使用店家');
+      final result = const LocationResult(
+        matchedCards: [],
+        trigger: LocationTrigger.none,
+      );
+
+      await tester.pumpWidget(wrap(
+        LocationStatusCard(
+          locationResult: result,
+          isDetecting: false,
+          recentCard: recent,
+          onCardTap: (c) => tappedCard = c,
+        ),
+      ));
+
+      await tester.tap(find.text('最近使用店家'));
+      expect(tappedCard?.id, 'recent-tap');
+    });
+
+    testWidgets('最近卡片顯示 history 圖示', (tester) async {
+      final recent = createCard(id: 'recent-icon', storeName: 'RecentStore');
+      final result = const LocationResult(
+        matchedCards: [],
+        trigger: LocationTrigger.none,
+      );
+
+      await tester.pumpWidget(wrap(
+        LocationStatusCard(
+          locationResult: result,
+          isDetecting: false,
+          recentCard: recent,
+          onCardTap: (_) {},
+        ),
+      ));
+
+      expect(find.byIcon(Icons.history), findsOneWidget);
+    });
+  });
 }

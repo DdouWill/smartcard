@@ -175,4 +175,50 @@ void main() {
       expect(savedData['card_1_store_name'], '店B');
     });
   });
+
+  // ──────────────────────────────────────────
+  // U17: WidgetService 空值防護
+  // ──────────────────────────────────────────
+  group('U17: WidgetService 空值防護', () {
+    test('空店名卡片 → 仍寫入空字串不 crash', () async {
+      final card = createCard(id: 'empty-name', storeName: '', barcodeValue: 'CODE');
+
+      await widgetService.updateWidget(matchedCards: [card]);
+
+      expect(savedData['widget_mode'], 'singleCard');
+      expect(savedData['primary_store_name'], '');
+      expect(savedData['primary_barcode_value'], 'CODE');
+    });
+
+    test('空條碼卡片 → 仍寫入空字串不 crash', () async {
+      final card = createCard(id: 'empty-barcode', storeName: '店家', barcodeValue: '');
+
+      await widgetService.updateWidget(matchedCards: [card]);
+
+      expect(savedData['widget_mode'], 'singleCard');
+      expect(savedData['primary_store_name'], '店家');
+      expect(savedData['primary_barcode_value'], '');
+    });
+
+    test('null recentCard + 空匹配 → noMatch 引導文字不 crash', () async {
+      await widgetService.updateWidget(matchedCards: [], recentCard: null);
+
+      expect(savedData['widget_mode'], 'noMatch');
+      expect(savedData['widget_title'], '點擊新增會員卡');
+      expect(savedData['primary_store_name'], '');
+      expect(savedData['primary_barcode_value'], '');
+    });
+
+    test('卡片有特殊字元店名 → 正常寫入', () async {
+      final card = createCard(
+        id: 'special-char',
+        storeName: '7-ELEVEN (台北店)',
+        barcodeValue: 'ABC-123',
+      );
+
+      await widgetService.updateWidget(matchedCards: [card]);
+
+      expect(savedData['primary_store_name'], '7-ELEVEN (台北店)');
+    });
+  });
 }

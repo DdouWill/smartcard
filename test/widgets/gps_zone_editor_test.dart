@@ -128,4 +128,219 @@ void main() {
       expect(find.text('請輸入有效的緯度（-90 ~ 90）'), findsOneWidget);
     });
   });
+
+  group('W14: GpsZoneEditor 驗證', () {
+    testWidgets('緯度 < -90 → 顯示驗證錯誤', (tester) async {
+      var currentZones = <GpsZone>[];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) {
+                return SingleChildScrollView(
+                  child: GpsZoneEditor(
+                    zones: currentZones,
+                    onZonesChanged: (updated) {
+                      setState(() => currentZones = updated);
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('新增區域'));
+      await tester.pumpAndSettle();
+
+      final textFields = find.byType(TextField);
+      await tester.enterText(textFields.at(0), '-91.0');
+      await tester.enterText(textFields.at(1), '121.0');
+
+      await tester.tap(find.widgetWithText(FilledButton, '新增'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('請輸入有效的緯度（-90 ~ 90）'), findsOneWidget);
+    });
+
+    testWidgets('經度 > 180 → 顯示驗證錯誤', (tester) async {
+      var currentZones = <GpsZone>[];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) {
+                return SingleChildScrollView(
+                  child: GpsZoneEditor(
+                    zones: currentZones,
+                    onZonesChanged: (updated) {
+                      setState(() => currentZones = updated);
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('新增區域'));
+      await tester.pumpAndSettle();
+
+      final textFields = find.byType(TextField);
+      await tester.enterText(textFields.at(0), '25.0');
+      await tester.enterText(textFields.at(1), '181.0');
+
+      await tester.tap(find.widgetWithText(FilledButton, '新增'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('請輸入有效的經度（-180 ~ 180）'), findsOneWidget);
+    });
+
+    testWidgets('經度 < -180 → 顯示驗證錯誤', (tester) async {
+      var currentZones = <GpsZone>[];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) {
+                return SingleChildScrollView(
+                  child: GpsZoneEditor(
+                    zones: currentZones,
+                    onZonesChanged: (updated) {
+                      setState(() => currentZones = updated);
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('新增區域'));
+      await tester.pumpAndSettle();
+
+      final textFields = find.byType(TextField);
+      await tester.enterText(textFields.at(0), '25.0');
+      await tester.enterText(textFields.at(1), '-181.0');
+
+      await tester.tap(find.widgetWithText(FilledButton, '新增'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('請輸入有效的經度（-180 ~ 180）'), findsOneWidget);
+    });
+
+    testWidgets('非數字緯度 → 顯示驗證錯誤', (tester) async {
+      var currentZones = <GpsZone>[];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) {
+                return SingleChildScrollView(
+                  child: GpsZoneEditor(
+                    zones: currentZones,
+                    onZonesChanged: (updated) {
+                      setState(() => currentZones = updated);
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('新增區域'));
+      await tester.pumpAndSettle();
+
+      final textFields = find.byType(TextField);
+      await tester.enterText(textFields.at(0), 'abc');
+      await tester.enterText(textFields.at(1), '121.0');
+
+      await tester.tap(find.widgetWithText(FilledButton, '新增'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('請輸入有效的緯度（-90 ~ 90）'), findsOneWidget);
+    });
+  });
+
+  group('W15: GpsZoneEditor 刪除 Zone', () {
+    testWidgets('列表中有 2 個 zone → 刪除其中一個 → 列表剩 1 個', (tester) async {
+      var currentZones = [
+        GpsZone(latitude: 25.0330, longitude: 121.5654, label: '台北101'),
+        GpsZone(latitude: 24.1627, longitude: 120.6476, label: '中港店'),
+      ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) {
+                return SingleChildScrollView(
+                  child: GpsZoneEditor(
+                    zones: currentZones,
+                    onZonesChanged: (updated) {
+                      setState(() => currentZones = updated);
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      // 初始有 2 個 zone
+      expect(find.text('台北101'), findsOneWidget);
+      expect(find.text('中港店'), findsOneWidget);
+      expect(find.byIcon(Icons.delete), findsNWidgets(2));
+
+      // 點擊第一個刪除按鈕
+      await tester.tap(find.byIcon(Icons.delete).first);
+      await tester.pumpAndSettle();
+
+      // 剩 1 個 zone
+      expect(find.byIcon(Icons.delete), findsOneWidget);
+      expect(find.text('中港店'), findsOneWidget);
+    });
+
+    testWidgets('刪除全部 zone → 顯示空狀態', (tester) async {
+      var currentZones = [
+        GpsZone(latitude: 25.0, longitude: 121.0, label: '僅有一個'),
+      ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) {
+                return SingleChildScrollView(
+                  child: GpsZoneEditor(
+                    zones: currentZones,
+                    onZonesChanged: (updated) {
+                      setState(() => currentZones = updated);
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('僅有一個'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.delete));
+      await tester.pumpAndSettle();
+
+      expect(find.text('尚未設定 GPS 區域（可選填）'), findsOneWidget);
+    });
+  });
 }

@@ -498,4 +498,270 @@ void main() {
       expect(inZone, isTrue);
     });
   });
+
+  // ──────────────────────────────────────────
+  // U19: MemberCard copyWith 補齊
+  // ──────────────────────────────────────────
+
+  group('U19: MemberCard copyWith 補齊', () {
+    test('copyWith 修改 barcodeFormat → 其他欄位不變', () {
+      final original = MemberCard(
+        id: 'cwf-1',
+        storeName: '測試',
+        barcodeValue: '123456789',
+        barcodeFormat: BarcodeFormatType.ean13,
+        cardColor: '#FF0000',
+        sortOrder: 3,
+        ssidKeywords: ['wifi1'],
+        gpsZones: [GpsZone(latitude: 25.0, longitude: 121.0)],
+      );
+
+      final copied = original.copyWith(barcodeFormat: BarcodeFormatType.qr);
+
+      expect(copied.barcodeFormat, BarcodeFormatType.qr);
+      expect(copied.storeName, '測試');
+      expect(copied.barcodeValue, '123456789');
+      expect(copied.cardColor, '#FF0000');
+      expect(copied.sortOrder, 3);
+      expect(copied.ssidKeywords.length, 1);
+      expect(copied.gpsZones.length, 1);
+    });
+
+    test('copyWith 設定 cardColor 為 null', () {
+      final original = MemberCard(
+        id: 'cwf-2',
+        storeName: '測試',
+        barcodeValue: '123',
+        barcodeFormat: BarcodeFormatType.qr,
+        cardColor: '#FF0000',
+      );
+
+      final copied = original.copyWith(cardColor: null);
+      expect(copied.cardColor, isNull);
+      expect(copied.storeName, '測試');
+    });
+
+    test('copyWith 設定 iconPath 為 null', () {
+      final original = MemberCard(
+        id: 'cwf-3',
+        storeName: '測試',
+        barcodeValue: '123',
+        barcodeFormat: BarcodeFormatType.qr,
+        iconPath: '/some/path.png',
+      );
+
+      final copied = original.copyWith(iconPath: null);
+      expect(copied.iconPath, isNull);
+    });
+
+    test('copyWith 修改 ssidKeywords → 原始不受影響', () {
+      final original = MemberCard(
+        id: 'cwf-4',
+        storeName: '測試',
+        barcodeValue: '123',
+        barcodeFormat: BarcodeFormatType.qr,
+        ssidKeywords: ['old'],
+      );
+
+      final copied = original.copyWith(ssidKeywords: ['new1', 'new2']);
+      expect(copied.ssidKeywords, ['new1', 'new2']);
+      expect(original.ssidKeywords, ['old']);
+    });
+
+    test('copyWith 修改 sortOrder', () {
+      final original = MemberCard(
+        id: 'cwf-5',
+        storeName: '測試',
+        barcodeValue: '123',
+        barcodeFormat: BarcodeFormatType.qr,
+        sortOrder: 0,
+      );
+
+      final copied = original.copyWith(sortOrder: 5);
+      expect(copied.sortOrder, 5);
+      expect(copied.id, original.id);
+      expect(copied.createdAt, original.createdAt);
+    });
+  });
+
+  // ──────────────────────────────────────────
+  // U20: GpsZone 序列化往返
+  // ──────────────────────────────────────────
+
+  group('U20: GpsZone 序列化往返', () {
+    test('GpsZone 欄位完全保留', () {
+      final zone = GpsZone(
+        latitude: 25.0330,
+        longitude: 121.5654,
+        radiusMeters: 250.0,
+        label: '台北101',
+      );
+
+      final json = {
+        'latitude': zone.latitude,
+        'longitude': zone.longitude,
+        'radiusMeters': zone.radiusMeters,
+        'label': zone.label,
+      };
+
+      final restored = GpsZone(
+        latitude: (json['latitude'] as num).toDouble(),
+        longitude: (json['longitude'] as num).toDouble(),
+        radiusMeters: (json['radiusMeters'] as num).toDouble(),
+        label: json['label'] as String?,
+      );
+
+      expect(restored.latitude, zone.latitude);
+      expect(restored.longitude, zone.longitude);
+      expect(restored.radiusMeters, zone.radiusMeters);
+      expect(restored.label, zone.label);
+    });
+
+    test('GpsZone 無 label 序列化往返', () {
+      final zone = GpsZone(
+        latitude: -33.8688,
+        longitude: 151.2093,
+        radiusMeters: 100.0,
+      );
+
+      final json = {
+        'latitude': zone.latitude,
+        'longitude': zone.longitude,
+        'radiusMeters': zone.radiusMeters,
+        'label': zone.label,
+      };
+
+      final restored = GpsZone(
+        latitude: (json['latitude'] as num).toDouble(),
+        longitude: (json['longitude'] as num).toDouble(),
+        radiusMeters: (json['radiusMeters'] as num?)?.toDouble() ?? 100.0,
+        label: json['label'] as String?,
+      );
+
+      expect(restored.latitude, zone.latitude);
+      expect(restored.longitude, zone.longitude);
+      expect(restored.radiusMeters, zone.radiusMeters);
+      expect(restored.label, isNull);
+    });
+
+    test('GpsZone 負座標序列化往返', () {
+      final zone = GpsZone(
+        latitude: -90.0,
+        longitude: -180.0,
+        radiusMeters: 50.0,
+        label: '南極',
+      );
+
+      final json = {
+        'latitude': zone.latitude,
+        'longitude': zone.longitude,
+        'radiusMeters': zone.radiusMeters,
+        'label': zone.label,
+      };
+
+      final restored = GpsZone(
+        latitude: (json['latitude'] as num).toDouble(),
+        longitude: (json['longitude'] as num).toDouble(),
+        radiusMeters: (json['radiusMeters'] as num).toDouble(),
+        label: json['label'] as String?,
+      );
+
+      expect(restored.latitude, -90.0);
+      expect(restored.longitude, -180.0);
+      expect(restored.label, '南極');
+    });
+  });
+
+  // ──────────────────────────────────────────
+  // U21: LocationService 多來源匹配合併
+  // ──────────────────────────────────────────
+
+  group('U21: 多來源匹配邏輯', () {
+    test('WiFi 優先：WiFi 匹配成功時不再檢查 GPS', () {
+      final cardA = MemberCard(
+        id: 'src-a', storeName: '店A（WiFi）', barcodeValue: 'A',
+        barcodeFormat: BarcodeFormatType.qr, ssidKeywords: ['StoreA_WiFi'],
+      );
+      final cardB = MemberCard(
+        id: 'src-b', storeName: '店B（GPS）', barcodeValue: 'B',
+        barcodeFormat: BarcodeFormatType.qr,
+        gpsZones: [GpsZone(latitude: 25.0, longitude: 121.0, radiusMeters: 100)],
+      );
+
+      const currentSsid = 'StoreA_WiFi_5G';
+      final wifiMatched = [cardA, cardB].where((card) {
+        return card.ssidKeywords.any((keyword) =>
+            currentSsid.toLowerCase().contains(keyword.toLowerCase()));
+      }).toList();
+
+      expect(wifiMatched.length, 1);
+      expect(wifiMatched.first.id, 'src-a');
+    });
+
+    test('WiFi 無匹配時降級到 GPS', () {
+      final cardA = MemberCard(
+        id: 'gps-a', storeName: '店A（GPS）', barcodeValue: 'A',
+        barcodeFormat: BarcodeFormatType.qr,
+        ssidKeywords: ['NonExistent_WiFi'],
+        gpsZones: [GpsZone(latitude: 25.0, longitude: 121.0, radiusMeters: 200)],
+      );
+
+      const currentSsid = 'Home_WiFi';
+      final wifiMatched = [cardA].where((c) {
+        return c.ssidKeywords.any((keyword) =>
+            currentSsid.toLowerCase().contains(keyword.toLowerCase()));
+      }).toList();
+      expect(wifiMatched, isEmpty);
+
+      final gpsMatched = [cardA].where((card) {
+        return card.gpsZones.any((zone) {
+          final distance = locationService.calculateDistance(
+            25.0005, 121.0005, zone.latitude, zone.longitude,
+          );
+          return distance <= zone.radiusMeters;
+        });
+      }).toList();
+      expect(gpsMatched.length, 1);
+      expect(gpsMatched.first.id, 'gps-a');
+    });
+
+    test('WiFi 和 GPS 都匹配不同卡片 → WiFi 優先返回', () {
+      final cardA = MemberCard(
+        id: 'both-a', storeName: '店A（WiFi）', barcodeValue: 'A',
+        barcodeFormat: BarcodeFormatType.qr, ssidKeywords: ['StoreA'],
+      );
+      final cardB = MemberCard(
+        id: 'both-b', storeName: '店B（GPS）', barcodeValue: 'B',
+        barcodeFormat: BarcodeFormatType.qr,
+        gpsZones: [GpsZone(latitude: 25.0, longitude: 121.0, radiusMeters: 100)],
+      );
+
+      const currentSsid = 'StoreA_Free';
+      final wifiMatched = [cardA, cardB].where((card) {
+        return card.ssidKeywords.any((keyword) =>
+            currentSsid.toLowerCase().contains(keyword.toLowerCase()));
+      }).toList();
+
+      expect(wifiMatched.length, 1);
+      expect(wifiMatched.first.storeName, '店A（WiFi）');
+    });
+
+    test('同一張卡同時有 WiFi 和 GPS → WiFi 優先返回', () {
+      final card = MemberCard(
+        id: 'dual-match', storeName: '雙匹配卡', barcodeValue: 'DUAL',
+        barcodeFormat: BarcodeFormatType.qr,
+        ssidKeywords: ['DualStore'],
+        gpsZones: [GpsZone(latitude: 25.0, longitude: 121.0, radiusMeters: 100)],
+      );
+
+      const currentSsid = 'DualStore_WiFi';
+      final wifiMatched = [card].where((c) {
+        return c.ssidKeywords.any((keyword) =>
+            currentSsid.toLowerCase().contains(keyword.toLowerCase()));
+      }).toList();
+
+      expect(wifiMatched.length, 1);
+      expect(wifiMatched.first.id, 'dual-match');
+    });
+  });
 }

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smartcard/models/member_card.dart';
 import 'package:smartcard/services/barcode_service.dart';
@@ -142,6 +144,43 @@ void main() {
 
     test('Code39 格式接受任意字串', () {
       expect(service.validateBarcode('HELLO', BarcodeFormatType.code39), isNull);
+    });
+  });
+
+  // ──────────────────────────────────────────
+  // U5: BarcodeService scanFromImage
+  // ──────────────────────────────────────────
+  group('U5: scanFromImage', () {
+    test('圖片檔案不存在 → 回傳失敗結果', () async {
+      final nonExistentFile = File('/tmp/non_existent_barcode_image.png');
+      final result = await service.scanFromImage(nonExistentFile);
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, contains('圖片檔案不存在'));
+      expect(result.value, isEmpty);
+      expect(result.format, BarcodeFormatType.unknown);
+    });
+
+    test('BarcodeScanResult.failure 建構正確', () {
+      final result = BarcodeScanResult.failure('測試錯誤');
+
+      expect(result.success, isFalse);
+      expect(result.value, isEmpty);
+      expect(result.format, BarcodeFormatType.unknown);
+      expect(result.errorMessage, '測試錯誤');
+    });
+
+    test('BarcodeScanResult 成功建構正確', () {
+      const result = BarcodeScanResult(
+        value: '4710088020019',
+        format: BarcodeFormatType.ean13,
+        success: true,
+      );
+
+      expect(result.success, isTrue);
+      expect(result.value, '4710088020019');
+      expect(result.format, BarcodeFormatType.ean13);
+      expect(result.errorMessage, isNull);
     });
   });
 }

@@ -179,4 +179,133 @@ void main() {
       expect(cardBInDb?.storeName, '店家B');
     });
   });
+
+  // ──────────────────────────────────────────
+  // U9: BackupService 替換匯入
+  // ──────────────────────────────────────────
+  group('U9: 替換匯入', () {
+    late String tempDir;
+    final db = DatabaseService();
+
+    setUp(() async {
+      tempDir = Directory.systemTemp.createTempSync('backup_replace_').path;
+      await db.initializeForTesting(tempDir);
+    });
+
+    tearDown(() async {
+      await db.resetForTesting();
+    });
+
+    test('已有 2 張卡 → 替換匯入 3 張 → 總共 3 張', () async {
+      // 新增卡片 A 和 B 到 DB
+      await db.addCard(MemberCard(
+        id: 'old-a',
+        storeName: '舊店A',
+        barcodeValue: 'OLD-A',
+        barcodeFormat: BarcodeFormatType.qr,
+      ));
+      await db.addCard(MemberCard(
+        id: 'old-b',
+        storeName: '舊店B',
+        barcodeValue: 'OLD-B',
+        barcodeFormat: BarcodeFormatType.qr,
+      ));
+
+      expect(db.getAllCards().length, 2);
+
+      // 建立備份 JSON：含 3 張新卡
+      final backupJson = jsonEncode({
+        'version': 1,
+        'exportedAt': DateTime.now().toIso8601String(),
+        'cardCount': 3,
+        'cards': List.generate(3, (i) => {
+          'id': 'new-$i',
+          'storeName': '新店$i',
+          'barcodeValue': 'NEW-$i',
+          'barcodeFormat': BarcodeFormatType.qr.index,
+          'sortOrder': i,
+          'ssidKeywords': <String>[],
+          'gpsZones': <Map>[],
+          'createdAt': '2024-01-01T00:00:00.000',
+          'updatedAt': '2024-01-01T00:00:00.000',
+        }),
+      });
+
+      final encrypted = backupService.encryptData(
+        Uint8List.fromList(utf8.encode(backupJson)),
+        'testPwd',
+      );
+      final backupFile = File('$tempDir/replace_backup.smartcard-backup');
+      await backupFile.writeAsBytes(encrypted);
+
+      // 替換匯入（merge: false）
+      final result = await backupService.importBackup(
+        backupFile,
+        'testPwd',
+        merge: false,
+      );
+
+      expect(result.imported, 3);
+      expect(result.skipped, 0);
+
+      // DB 中應有 3 張卡（舊卡被清除）
+      final allCards = db.getAllCards();
+      expect(allCards.length, 3);
+
+      // 舊卡不應存在
+      expect(db.getCardById('old-a'), isNull);
+      expect(db.getCardById('old-b'), isNull);
+
+      // 新卡存在
+      expect(db.getCardById('new-0'), isNotNull);
+      expect(db.getCardById('new-1'), isNotNull);
+      expect(db.getCardById('new-2'), isNotNull);
+    });
+  });
+
+  // ──────────────────────────────────────────
+  // U10: BackupService 格式損壞
+  // ──────────────────────────────────────────
+  group('U10: 格式損壞', () {
+    test('傳入隨機 bytes → 拋出 BackupException', () async {
+      final randomBytes = Uint8List.fromList(
+        List.generate(100, (i) => i % 256),
+      );
+      final tempFile = File(
+        '${Directory.systemTemp.path}/corrupt_${DateTime.now().millisecondsSinceEpoch}.smartcard-backup',
+      );
+      await tempFile.writeAsBytes(randomBytes);
+
+      expect(
+        () => backupService.importBackup(tempFile, 'anyPassword', merge: true),
+        throwsA(isA<BackupException>()),
+      );
+
+      await tempFile.delete();
+    });
+
+    test('傳入過短的 bytes → 拋出 BackupException', () {
+      // AES 需要至少 salt(32) + iv(16) + 16 bytes ciphertext = 64 bytes
+      final shortBytes = Uint8List.fromList(List.generate(10, (i) => i));
+
+      expect(
+        () => backupService.decryptData(shortBytes, 'pwd'),
+        throwsA(isA<BackupException>()),
+      );
+    });
+
+    test('空檔案 → 拋出 BackupException', () async {
+      final emptyFile = File(
+        '${Directory.systemTemp.path}/empty_${DateTime.now().millisecondsSinceEpoch}.smartcard-backup',
+      );
+      await emptyFile.writeAsBytes([]);
+
+      expect(
+        () => backupService.importBackup(emptyFile, 'pwd', merge: true),
+        throwsA(isA<BackupException>()),
+      );
+
+      await emptyFile.delete();
+    });
+  });
 }

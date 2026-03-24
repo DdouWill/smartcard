@@ -137,4 +137,64 @@ void main() {
       expect(find.text('刪除'), findsOneWidget);
     });
   });
+
+  group('W3: CardWidget 滑動刪除', () {
+    testWidgets('向左滑動觸發確認對話框', (tester) async {
+      final card = createTestCard();
+      await tester.pumpWidget(wrap(
+        CardWidget(card: card, onTap: () {}, onDelete: () {}),
+      ));
+
+      await tester.drag(find.byType(Dismissible), const Offset(-500, 0));
+      await tester.pumpAndSettle();
+
+      expect(find.text('刪除卡片'), findsOneWidget);
+      expect(find.text('確定要刪除「測試店家」嗎？'), findsOneWidget);
+    });
+
+    testWidgets('確認刪除後觸發 onDelete callback', (tester) async {
+      var deleted = false;
+      final card = createTestCard();
+      await tester.pumpWidget(wrap(
+        CardWidget(card: card, onTap: () {}, onDelete: () => deleted = true),
+      ));
+
+      await tester.drag(find.byType(Dismissible), const Offset(-500, 0));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('刪除'));
+      await tester.pumpAndSettle();
+
+      expect(deleted, isTrue);
+    });
+
+    testWidgets('取消刪除不觸發 callback', (tester) async {
+      var deleted = false;
+      final card = createTestCard();
+      await tester.pumpWidget(wrap(
+        CardWidget(card: card, onTap: () {}, onDelete: () => deleted = true),
+      ));
+
+      await tester.drag(find.byType(Dismissible), const Offset(-500, 0));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('取消'));
+      await tester.pumpAndSettle();
+
+      expect(deleted, isFalse);
+    });
+
+    testWidgets('滑動時顯示紅色背景與刪除圖示', (tester) async {
+      final card = createTestCard();
+      await tester.pumpWidget(wrap(
+        CardWidget(card: card, onTap: () {}, onDelete: () {}),
+      ));
+
+      // Start dragging but don't complete
+      await tester.drag(find.byType(Dismissible), const Offset(-100, 0));
+      await tester.pump();
+
+      expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+    });
+  });
 }

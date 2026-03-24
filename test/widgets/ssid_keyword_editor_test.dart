@@ -135,4 +135,69 @@ void main() {
       expect(find.byType(Chip), findsNothing);
     });
   });
+
+  group('W12: SsidKeywordEditor 重複偵測', () {
+    testWidgets('輸入已存在的關鍵字 → 不新增且顯示 SnackBar 提示', (tester) async {
+      var currentKeywords = ['PX_Mart'];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) {
+                return SsidKeywordEditor(
+                  keywords: currentKeywords,
+                  onKeywordsChanged: (updated) {
+                    setState(() => currentKeywords = updated);
+                  },
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      // 初始有 1 個 Chip
+      expect(find.byType(Chip), findsOneWidget);
+
+      // 輸入重複的關鍵字
+      await tester.enterText(find.byType(TextField), 'PX_Mart');
+      await tester.tap(find.text('新增'));
+      await tester.pumpAndSettle();
+
+      // 仍然只有 1 個 Chip
+      expect(find.byType(Chip), findsOneWidget);
+      // SnackBar 提示已存在
+      expect(find.text('「PX_Mart」已存在'), findsOneWidget);
+    });
+
+    testWidgets('輸入不同關鍵字 → 正常新增', (tester) async {
+      var currentKeywords = ['PX_Mart'];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) {
+                return SsidKeywordEditor(
+                  keywords: currentKeywords,
+                  onKeywordsChanged: (updated) {
+                    setState(() => currentKeywords = updated);
+                  },
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      await tester.enterText(find.byType(TextField), 'ibon');
+      await tester.tap(find.text('新增'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Chip), findsNWidgets(2));
+      expect(find.text('PX_Mart'), findsOneWidget);
+      expect(find.text('ibon'), findsOneWidget);
+    });
+  });
 }
