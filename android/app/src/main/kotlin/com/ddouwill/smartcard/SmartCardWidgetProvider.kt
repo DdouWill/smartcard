@@ -13,6 +13,7 @@ import android.widget.RemoteViews
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.MultiFormatWriter
+import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetPlugin
 
 /**
@@ -98,10 +99,12 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
                 } else {
                     Uri.parse("smartcard://home")
                 }
-                val launchIntent = Intent(context, MainActivity::class.java).apply {
-                    data = deepLinkUri
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                }
+                // 使用 HomeWidget 標準啟動方式，讓 Flutter 端能收到 URI callback
+                val launchIntent = HomeWidgetLaunchIntent.getActivity(
+                    context,
+                    MainActivity::class.java,
+                    deepLinkUri
+                )
                 context.startActivity(launchIntent)
             }
         }
@@ -336,23 +339,17 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
         )
     }
 
-    /** 建立開啟 App 的 PendingIntent（支援 deep link 到特定卡片） */
+    /** 建立開啟 App 的 PendingIntent（使用 HomeWidget 標準啟動） */
     private fun createOpenAppIntent(context: Context, cardId: String?): PendingIntent {
-        val intent = Intent(context, MainActivity::class.java).apply {
-            if (!cardId.isNullOrEmpty()) {
-                data = Uri.parse("smartcard://card/$cardId")
-            }
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        val uri = if (!cardId.isNullOrEmpty()) {
+            Uri.parse("smartcard://card/$cardId")
+        } else {
+            Uri.parse("smartcard://home")
         }
-
-        // 使用 cardId 的 hashCode 避免不同卡片的 PendingIntent 衝突
-        val requestCode = if (!cardId.isNullOrEmpty()) cardId.hashCode() else 0
-
-        return PendingIntent.getActivity(
+        return HomeWidgetLaunchIntent.getActivity(
             context,
-            requestCode,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            MainActivity::class.java,
+            uri
         )
     }
 
