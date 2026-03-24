@@ -100,7 +100,7 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
                     Uri.parse("smartcard://home")
                 }
                 // 使用 HomeWidget 標準啟動方式，讓 Flutter 端能收到 URI callback
-                val launchIntent = HomeWidgetLaunchIntent.getActivity(
+                val pendingIntent = HomeWidgetLaunchIntent.getActivity(
                     context,
                     MainActivity::class.java,
                     deepLinkUri
