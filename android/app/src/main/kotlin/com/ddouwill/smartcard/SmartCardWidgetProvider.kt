@@ -102,8 +102,11 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
 
         if (storeName.isNotEmpty() && cardId.isNotEmpty()) {
             views.setViewVisibility(R.id.widget_barcode_image, View.VISIBLE)
+            views.setViewVisibility(R.id.widget_store_name, View.VISIBLE)
             views.setViewVisibility(R.id.widget_multi_card_container, View.GONE)
             views.setViewVisibility(R.id.widget_empty_text, View.GONE)
+
+            views.setTextViewText(R.id.widget_store_name, storeName)
 
             val barcodeValue = widgetData.getString("primary_barcode_value", "") ?: ""
             val barcodeFormat = widgetData.getString("primary_barcode_format", "CODE_128") ?: "CODE_128"
@@ -118,6 +121,7 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
             views.setOnClickPendingIntent(R.id.widget_barcode_image, clickIntent)
         } else {
             views.setViewVisibility(R.id.widget_barcode_image, View.GONE)
+            views.setViewVisibility(R.id.widget_store_name, View.GONE)
             views.setViewVisibility(R.id.widget_multi_card_container, View.GONE)
             views.setViewVisibility(R.id.widget_empty_text, View.VISIBLE)
 
@@ -132,13 +136,17 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
         widgetData: android.content.SharedPreferences
     ) {
         views.setViewVisibility(R.id.widget_barcode_image, View.VISIBLE)
+        views.setViewVisibility(R.id.widget_store_name, View.VISIBLE)
         views.setViewVisibility(R.id.widget_multi_card_container, View.GONE)
         views.setViewVisibility(R.id.widget_empty_text, View.GONE)
 
+        val storeName = widgetData.getString("primary_store_name", "") ?: ""
         val cardId = widgetData.getString("primary_card_id", "") ?: ""
         val barcodeValue = widgetData.getString("primary_barcode_value", "") ?: ""
         val barcodeFormat = widgetData.getString("primary_barcode_format", "CODE_128") ?: "CODE_128"
-        
+
+        views.setTextViewText(R.id.widget_store_name, storeName)
+
         if (barcodeValue.isNotEmpty()) {
             val bitmap = generateBarcodeBitmap(barcodeValue, barcodeFormat)
             if (bitmap != null) {
@@ -156,6 +164,7 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
         widgetData: android.content.SharedPreferences
     ) {
         views.setViewVisibility(R.id.widget_barcode_image, View.GONE)
+        views.setViewVisibility(R.id.widget_store_name, View.GONE)
         views.setViewVisibility(R.id.widget_multi_card_container, View.VISIBLE)
         views.setViewVisibility(R.id.widget_empty_text, View.GONE)
 
