@@ -69,10 +69,22 @@ class _AddCardScreenState extends State<AddCardScreen>
 
   bool get _isEditing => widget.editingCard != null;
 
+  // 已存在卡片的常見店家名（用於過濾 dropdown）
+  late final Set<String> _existingStoreNames;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+
+    // 取得已存在的常見店家名稱，編輯模式排除自身
+    final allCards = _controller.cards;
+    final knownNames = knownStores.map((s) => s.name).toSet();
+    _existingStoreNames = allCards
+        .where((c) => knownNames.contains(c.storeName))
+        .where((c) => !_isEditing || c.id != widget.editingCard!.id)
+        .map((c) => c.storeName)
+        .toSet();
 
     // 監聽條碼輸入，即時更新預覽 + EAN-13 自動補 check digit
     _barcodeValueController.addListener(_onBarcodeValueChanged);
@@ -221,7 +233,9 @@ class _AddCardScreenState extends State<AddCardScreen>
             ),
             isExpanded: true,
             items: [
-              ...knownStores.map((store) => DropdownMenuItem(
+              ...knownStores
+                  .where((store) => !_existingStoreNames.contains(store.name))
+                  .map((store) => DropdownMenuItem(
                     value: store.name,
                     child: Text(store.name),
                   )),
