@@ -511,15 +511,24 @@ class _AddCardScreenState extends State<AddCardScreen>
         setState(() {
           _scannedValue = result.value;
           _scannedFormat = result.format;
+          _barcodeValueController.text = result.value;
+          _selectedFormat = result.format;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('辨識成功：${result.value}')),
         );
+        // 自動跳轉到手動輸入 Tab 讓使用者補填店名
+        _tabController.animateTo(1);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result.errorMessage ?? '辨識失敗'),
             backgroundColor: Theme.of(context).colorScheme.error,
+            action: SnackBarAction(
+              label: '手動輸入',
+              textColor: Colors.white,
+              onPressed: () => _tabController.animateTo(1),
+            ),
           ),
         );
       }
