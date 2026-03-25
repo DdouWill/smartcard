@@ -125,20 +125,31 @@ class LocationService {
     }
 
     // ── Step 2：GPS 地理圍欄比對 ──
-    LocationResult? gpsResult;
+    // 集中取得 GPS 座標，避免冷啟動時重複呼叫導致第一次 null、第二次才就緒的問題
+    Position? pos;
     if (enableGps) {
-      gpsResult = await _matchByGps(allCards);
-      if (gpsResult!.hasMatches) {
-        result = gpsResult;
-        return _updateLastResult(result);
+      pos = await getCurrentPosition();
+      if (pos != null) {
+        final gpsResult = await _matchByGps(allCards, pos);
+        if (gpsResult.hasMatches) {
+          result = gpsResult;
+          return _updateLastResult(result);
+        }
       }
     }
 
     // ── Step 3：無符合 → 找最近門市作為提示 ──
     NearestStoreInfo? nearest;
-    // 優先使用 Step 2 已取得的位置，避免重複呼叫 GPS
-    final pos = gpsResult?.currentPosition ?? await getCurrentPosition();
+    // 若 Step 2 未取得座標（冷啟動），再嘗試一次
+    pos ??= await getCurrentPosition();
     if (pos != null) {
+      // 冷啟動情境：Step 2 拿不到座標但現在拿到了，補跑 GPS 匹配
+      if (enableGps) {
+        final retryGpsResult = await _matchByGps(allCards, pos);
+        if (retryGpsResult.hasMatches) {
+          return _updateLastResult(retryGpsResult);
+        }
+      }
       nearest = await StoreLocationService().findNearestStore(
         userLat: pos.latitude,
         userLng: pos.longitude,
@@ -248,20 +259,16 @@ class LocationService {
 
   /// 依 GPS 地理圍欄比對卡片
   ///
+  /// [position] 已取得的 GPS 座標（由 matchCardsByLocation 統一管理）
+  ///
   /// 匹配邏輯：
   /// 1. 卡片有自訂 gpsZones → 用自訂座標比對
   /// 2. 卡片無 gpsZones 但店名匹配 known store → 從 store_locations.json 查詢附近門市
   /// 3. 兩者皆無 → 不匹配
-  Future<LocationResult> _matchByGps(List<MemberCard> allCards) async {
-    final position = await getCurrentPosition();
-
-    if (position == null) {
-      return const LocationResult(
-        matchedCards: [],
-        trigger: LocationTrigger.gps,
-      );
-    }
-
+  Future<LocationResult> _matchByGps(
+    List<MemberCard> allCards,
+    Position position,
+  ) async {
     final storeService = StoreLocationService();
     final List<MemberCard> matched = [];
 
