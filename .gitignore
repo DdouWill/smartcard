@@ -5,3 +5,7 @@ build/
 android/local.properties
 android/app/src/main/java/io/flutter/plugins/
 pubspec.lock
+
+# Firebase
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
