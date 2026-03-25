@@ -2,7 +2,7 @@
 // CardWidget — 卡片列表項目元件
 // ============================================================
 // 顯示單張會員卡的摘要資訊：顏色背景、店名、條碼格式、條碼縮圖。
-// 支援左滑刪除（Dismissible）與長按快速操作選單（編輯/刪除）。
+// 支援雙向滑動（右滑編輯、左滑刪除）與長按快速操作選單（編輯/刪除）。
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -52,10 +52,27 @@ class CardWidget extends StatelessWidget {
     return Dismissible(
       // 唯一 key（用 card.id 確保無衝突）
       key: ValueKey('card_${card.id}'),
-      direction: DismissDirection.endToStart, // 左滑刪除
+      direction: onEdit != null
+          ? DismissDirection.horizontal
+          : DismissDirection.endToStart,
 
-      // 滑動時背景（紅色垃圾桶）
+      // 右滑時背景（藍色編輯 icon）
       background: Container(
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: 24),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primaryContainer,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(
+          Icons.edit_outlined,
+          color: Theme.of(context).colorScheme.onPrimaryContainer,
+          size: 28,
+        ),
+      ),
+
+      // 左滑時背景（紅色垃圾桶）
+      secondaryBackground: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 24),
         decoration: BoxDecoration(
@@ -69,8 +86,12 @@ class CardWidget extends StatelessWidget {
         ),
       ),
 
-      // 確認刪除對話框
-      confirmDismiss: (_) async {
+      // 確認：左滑刪除確認，右滑觸發編輯後不移除
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          onEdit?.call();
+          return false;
+        }
         return await _showDeleteConfirm(context);
       },
       onDismissed: (_) => onDelete(),
