@@ -27,18 +27,18 @@ void main() {
         userLng: userLng,
         radiusKm: 0.5,
       );
-      debugPrint('📍 7-ELEVEN zones in 500m: ${sevenZones.length}');
+      print('📍 7-ELEVEN zones in 500m: ${sevenZones.length}');
       expect(sevenZones.isNotEmpty, true, reason: '7-ELEVEN 應有門市在 500m 內');
 
       // ── Test 2: 至少一間 7-ELEVEN 在 100m radius 內 ──
       bool sevenInRange = false;
       for (final zone in sevenZones) {
         final dist = _haversine(userLat, userLng, zone.latitude, zone.longitude);
-        debugPrint('  7-ELEVEN: (${zone.latitude}, ${zone.longitude}) = ${dist.toStringAsFixed(0)}m (r=${zone.radiusMeters}m) ${dist <= zone.radiusMeters ? "✅" : ""}');
+        print('  7-ELEVEN: (${zone.latitude}, ${zone.longitude}) = ${dist.toStringAsFixed(0)}m (r=${zone.radiusMeters}m) ${dist <= zone.radiusMeters ? "✅" : ""}');
         if (dist <= zone.radiusMeters) sevenInRange = true;
       }
       expect(sevenInRange, true, reason: '至少一間 7-ELEVEN 應在匹配半徑內');
-      debugPrint('✅ Test 2 PASS: 7-ELEVEN 在 100m 匹配半徑內');
+      print('✅ Test 2 PASS: 7-ELEVEN 在 100m 匹配半徑內');
 
       // ── Test 3: 全家 500m 內查詢 ──
       final familyZones = await service.getNearbyStoreLocations(
@@ -47,21 +47,21 @@ void main() {
         userLng: userLng,
         radiusKm: 0.5,
       );
-      debugPrint('📍 全家 zones in 500m: ${familyZones.length}');
+      print('📍 全家 zones in 500m: ${familyZones.length}');
       bool familyInRange = false;
       for (final zone in familyZones) {
         final dist = _haversine(userLat, userLng, zone.latitude, zone.longitude);
-        debugPrint('  全家: (${zone.latitude}, ${zone.longitude}) = ${dist.toStringAsFixed(0)}m (r=${zone.radiusMeters}m) ${dist <= zone.radiusMeters ? "✅" : ""}');
+        print('  全家: (${zone.latitude}, ${zone.longitude}) = ${dist.toStringAsFixed(0)}m (r=${zone.radiusMeters}m) ${dist <= zone.radiusMeters ? "✅" : ""}');
         if (dist <= zone.radiusMeters) familyInRange = true;
       }
-      debugPrint('📍 全家 100m 內匹配: $familyInRange');
+      print('📍 全家 100m 內匹配: $familyInRange');
 
       // ── Test 4: findNearestStore ──
       final nearest = await service.findNearestStore(
         userLat: userLat,
         userLng: userLng,
       );
-      debugPrint('📍 最近門市: ${nearest?.brandName} (${nearest?.distanceText})');
+      print('📍 最近門市: ${nearest?.brandName} (${nearest?.distanceText})');
       expect(nearest, isNotNull, reason: '應找到最近門市');
 
       // ── Test 5: 模擬 _matchByGps 邏輯 ──
@@ -96,17 +96,17 @@ void main() {
             return dist <= zone.radiusMeters;
           });
           if (inZone) matched.add(card);
-          debugPrint('  ${card.storeName}: gpsZones=空, store_locations查詢=${nearbyZones.length}筆, 匹配=$inZone');
+          print('  ${card.storeName}: gpsZones=空, store_locations查詢=${nearbyZones.length}筆, 匹配=$inZone');
         }
       }
 
-      debugPrint('📍 匹配結果: ${matched.map((c) => c.storeName).toList()}');
+      print('📍 匹配結果: ${matched.map((c) => c.storeName).toList()}');
       expect(matched.any((c) => c.storeName == '7-ELEVEN'), true,
           reason: '7-ELEVEN 應該匹配（26m < 100m）');
-      debugPrint('✅ Test 5 PASS: GPS 匹配邏輯驗證成功');
+      print('✅ Test 5 PASS: GPS 匹配邏輯驗證成功');
 
-      debugPrint('');
-      debugPrint('═══ 全部測試通過 ═══');
+      print('');
+      print('═══ 全部測試通過 ═══');
     });
   });
 }
