@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "892622294898",
+    "project_id": "smartcard-e10a5",
+    "storage_bucket": "smartcard-e10a5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:892622294898:android:747f42b256887d1f2c17eb",
+        "android_client_info": {
+          "package_name": "Smartcard.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD1tsJ4EugPT-LYJ85ZXqop3tNBKmXUFPs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:892622294898:android:a3b2eb05f1c3db4d2c17eb",
+        "android_client_info": {
+          "package_name": "com.ddouwill.smartcard"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD1tsJ4EugPT-LYJ85ZXqop3tNBKmXUFPs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
