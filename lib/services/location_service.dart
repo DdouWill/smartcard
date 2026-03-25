@@ -125,9 +125,10 @@ class LocationService {
     }
 
     // ── Step 2：GPS 地理圍欄比對 ──
+    LocationResult? gpsResult;
     if (enableGps) {
-      final gpsResult = await _matchByGps(allCards);
-      if (gpsResult.hasMatches) {
+      gpsResult = await _matchByGps(allCards);
+      if (gpsResult!.hasMatches) {
         result = gpsResult;
         return _updateLastResult(result);
       }
@@ -135,7 +136,8 @@ class LocationService {
 
     // ── Step 3：無符合 → 找最近門市作為提示 ──
     NearestStoreInfo? nearest;
-    final pos = await getCurrentPosition();
+    // 優先使用 Step 2 已取得的位置，避免重複呼叫 GPS
+    final pos = gpsResult?.currentPosition ?? await getCurrentPosition();
     if (pos != null) {
       nearest = await StoreLocationService().findNearestStore(
         userLat: pos.latitude,
@@ -245,6 +247,11 @@ class LocationService {
   }
 
   /// 依 GPS 地理圍欄比對卡片
+  ///
+  /// 匹配邏輯：
+  /// 1. 卡片有自訂 gpsZones → 用自訂座標比對
+  /// 2. 卡片無 gpsZones 但店名匹配 known store → 從 store_locations.json 查詢附近門市
+  /// 3. 兩者皆無 → 不匹配
   Future<LocationResult> _matchByGps(List<MemberCard> allCards) async {
     final position = await getCurrentPosition();
 
@@ -255,10 +262,28 @@ class LocationService {
       );
     }
 
-    final matched = allCards.where((card) {
-      return card.gpsZones.any((zone) =>
-          _isInZone(position.latitude, position.longitude, zone));
-    }).toList();
+    final storeService = StoreLocationService();
+    final List<MemberCard> matched = [];
+
+    for (final card in allCards) {
+      if (card.gpsZones.isNotEmpty) {
+        // 有自訂 GPS 圍欄 → 用卡片自帶座標比對
+        final inZone = card.gpsZones.any((zone) =>
+            _isInZone(position.latitude, position.longitude, zone));
+        if (inZone) matched.add(card);
+      } else {
+        // 無自訂圍欄 → 嘗試從 store_locations.json 查詢品牌門市
+        final nearbyZones = await storeService.getNearbyStoreLocations(
+          card.storeName,
+          userLat: position.latitude,
+          userLng: position.longitude,
+          radiusKm: 0.5, // 500m 粗篩，實際用 zone.radiusMeters 精確判斷
+        );
+        final inZone = nearbyZones.any((zone) =>
+            _isInZone(position.latitude, position.longitude, zone));
+        if (inZone) matched.add(card);
+      }
+    }
 
     return LocationResult(
       matchedCards: matched,
