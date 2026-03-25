@@ -59,4 +59,8 @@ dependencies {
 
     // home_widget 需要此依賴
     implementation 'androidx.work:work-runtime-ktx:2.9.0'
+
+    // Firebase Analytics
+    implementation platform('com.google.firebase:firebase-bom:33.7.0')
+    implementation 'com.google.firebase:firebase-analytics-ktx'
 }

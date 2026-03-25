@@ -116,29 +116,37 @@ class StoreLocationService {
   static const _remoteUrl =
       'https://raw.githubusercontent.com/DdouWill/smartcard/main/lib/data/store_locations.json';
 
-  /// 載入門市資料（優先讀本地更新檔，fallback 到 asset）
+  /// 載入門市資料（比較 bundled / local 版本，取較新者）
   Future<Map<String, dynamic>> _loadData() async {
     if (_storesData != null) return _storesData!;
 
-    String jsonString;
+    // 1. 讀 bundled asset
+    final bundledString =
+        await rootBundle.loadString('lib/data/store_locations.json');
+    final bundledDecoded = json.decode(bundledString) as Map<String, dynamic>;
+    final bundledVersion = (bundledDecoded['version'] as int?) ?? 0;
 
-    // 優先嘗試讀取本地更新檔
+    // 2. 讀 local file（如果存在）
+    Map<String, dynamic>? localDecoded;
+    int localVersion = 0;
     try {
       final dir = await getApplicationDocumentsDirectory();
       final localFile = File('${dir.path}/$_localFileName');
       if (await localFile.exists()) {
-        jsonString = await localFile.readAsString();
-      } else {
-        jsonString =
-            await rootBundle.loadString('lib/data/store_locations.json');
+        final localString = await localFile.readAsString();
+        localDecoded = json.decode(localString) as Map<String, dynamic>;
+        localVersion = (localDecoded['version'] as int?) ?? 0;
       }
     } catch (_) {
-      jsonString =
-          await rootBundle.loadString('lib/data/store_locations.json');
+      // local 讀取失敗，使用 bundled
     }
 
-    final decoded = json.decode(jsonString) as Map<String, dynamic>;
-    _storesData = decoded['stores'] as Map<String, dynamic>;
+    // 3. 比較版本：local >= bundled 用 local，否則用 bundled
+    final chosen = (localDecoded != null && localVersion >= bundledVersion)
+        ? localDecoded
+        : bundledDecoded;
+
+    _storesData = chosen['stores'] as Map<String, dynamic>;
     return _storesData!;
   }
 
@@ -159,12 +167,14 @@ class StoreLocationService {
 
       final jsonString = await response.transform(utf8.decoder).join();
 
-      // 驗證 JSON 格式
+      // 驗證 JSON 格式（遠端 JSON 需包含 version）
       final decoded = json.decode(jsonString) as Map<String, dynamic>;
       final stores = decoded['stores'] as Map<String, dynamic>?;
       if (stores == null || stores.isEmpty) {
         throw Exception('資料格式錯誤');
       }
+      // 確保 version 欄位存在
+      decoded['version'] ??= 0;
 
       // 計算統計
       int totalLocations = 0;
@@ -191,7 +201,52 @@ class StoreLocationService {
     }
   }
 
-  /// 取得本地更新檔的修改時間（null 表示尚未更新過）
+  /// 檢查遠端是否有新版門市資料
+  /// 回傳 true 表示有新版可更新
+  Future<bool> checkForStoreUpdate() async {
+    try {
+      final client = HttpClient();
+      try {
+        final request = await client.getUrl(Uri.parse(_remoteUrl));
+        request.headers.set('User-Agent', 'SmartCard-App');
+        final response = await request.close();
+
+        if (response.statusCode != 200) return false;
+
+        final jsonString = await response.transform(utf8.decoder).join();
+        final decoded = json.decode(jsonString) as Map<String, dynamic>;
+        final remoteVersion = decoded['version'] as int? ?? 0;
+
+        // 取得本地版本（bundled 或 local 的較大者）
+        final localData = await _loadData();
+        // _loadData 回傳的是 stores map，要從原始 JSON 讀 version
+        // 這裡直接重新讀一次 bundled
+        final bundledStr = await rootBundle.loadString('lib/data/store_locations.json');
+        final bundledDecoded = json.decode(bundledStr) as Map<String, dynamic>;
+        int localVersion = bundledDecoded['version'] as int? ?? 0;
+
+        // 檢查 local file 版本
+        try {
+          final dir = await getApplicationDocumentsDirectory();
+                    final localFile = File('${dir.path}/$_localFileName');
+          if (await localFile.exists()) {
+            final localStr = await localFile.readAsString();
+            final localDecoded = json.decode(localStr) as Map<String, dynamic>;
+            final fileVersion = localDecoded['version'] as int? ?? 0;
+            if (fileVersion > localVersion) localVersion = fileVersion;
+          }
+        } catch (_) {}
+
+        return remoteVersion > localVersion;
+      } finally {
+        client.close();
+      }
+    } catch (_) {
+      return false;
+    }
+  }
+
+    /// 取得本地更新檔的修改時間（null 表示尚未更新過）
   Future<DateTime?> getLastUpdateTime() async {
     try {
       final dir = await getApplicationDocumentsDirectory();
@@ -218,7 +273,7 @@ class StoreLocationService {
       return GpsZone(
         latitude: (m['lat'] as num).toDouble(),
         longitude: (m['lng'] as num).toDouble(),
-        radiusMeters: (m['radius'] as num?)?.toDouble() ?? 100.0,
+        radiusMeters: (m['radius'] as num?)?.toDouble() ?? 200.0,
         label: m['name'] as String?,
       );
     }).toList();
@@ -319,6 +374,7 @@ class StoreLocationService {
     required double userLat,
     required double userLng,
     double maxDistanceKm = _defaultSearchRadiusKm,
+    Set<String>? brandFilter,
   }) async {
     final stores = await _loadData();
 
@@ -328,6 +384,10 @@ class StoreLocationService {
 
     for (final entry in stores.entries) {
       final brandName = entry.key;
+      // 只搜尋使用者有卡片的品牌
+      if (brandFilter != null && !brandFilter.contains(brandName)) {
+        continue;
+      }
       final brandData = entry.value as Map<String, dynamic>;
       final locations = brandData['locations'] as List<dynamic>?;
       if (locations == null) continue;
@@ -359,7 +419,7 @@ class StoreLocationService {
           minZone = GpsZone(
             latitude: lat,
             longitude: lng,
-            radiusMeters: (m['radius'] as num?)?.toDouble() ?? 100.0,
+            radiusMeters: (m['radius'] as num?)?.toDouble() ?? 200.0,
             label: m['name'] as String?,
           );
         }

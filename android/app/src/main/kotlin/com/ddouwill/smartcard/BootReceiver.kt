@@ -38,5 +38,13 @@ class BootReceiver : BroadcastReceiver() {
         }
         
         Log.d(TAG, "LocationForegroundService 啟動指令已發送")
+
+        // 開機後啟動 AlarmManager geofence 維護 & widget 保底更新排程
+        WidgetUpdateAlarmReceiver.scheduleNextAlarm(context, 15)
+        Log.d(TAG, "AlarmManager geofence 維護排程已啟動（15 分鐘）")
+
+        // 開機後重新註冊 geofence
+        GeofenceManager.reRegisterFromLastLocation(context)
+        Log.d(TAG, "Geofence 重新註冊已觸發")
     }
 }

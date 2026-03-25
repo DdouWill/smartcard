@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 import 'app_controller.dart';
 import 'app_router.dart';
@@ -24,6 +25,9 @@ Future<void> main() async {
 
   // 2. 初始化 AppController (載入卡片與設定，啟動計時器)
   await AppController().initialize();
+
+  // 3. Firebase Analytics: app_started
+  FirebaseAnalytics.instance.logEvent(name: 'app_started');
 
   runApp(const SmartCardApp());
 }

@@ -607,12 +607,19 @@ class _StoreUpdateTile extends StatefulWidget {
 
 class _StoreUpdateTileState extends State<_StoreUpdateTile> {
   bool _updating = false;
+  bool _hasUpdate = false;
   DateTime? _lastUpdate;
 
   @override
   void initState() {
     super.initState();
     _loadLastUpdate();
+    _checkForUpdate();
+  }
+
+  Future<void> _checkForUpdate() async {
+    final hasUpdate = await StoreLocationService().checkForStoreUpdate();
+    if (mounted) setState(() => _hasUpdate = hasUpdate);
   }
 
   Future<void> _loadLastUpdate() async {
@@ -625,6 +632,7 @@ class _StoreUpdateTileState extends State<_StoreUpdateTile> {
     try {
       final result = await StoreLocationService().updateStoreData();
       await _loadLastUpdate();
+      setState(() => _hasUpdate = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -671,7 +679,13 @@ class _StoreUpdateTileState extends State<_StoreUpdateTile> {
             )
           : const Icon(Icons.store),
       title: const Text('更新門市資料'),
-      subtitle: Text(_formatLastUpdate()),
+      subtitle: Text(
+        _hasUpdate ? '⬆️ 有新版本可更新' : _formatLastUpdate(),
+        style: _hasUpdate ? TextStyle(
+          color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.bold,
+        ) : null,
+      ),
       onTap: _updating ? null : _handleUpdate,
     );
   }

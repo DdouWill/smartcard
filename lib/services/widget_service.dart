@@ -47,6 +47,7 @@ class WidgetService {
   /// 增加防呆：確保資料格式正確，避免原生層崩潰
   Future<void> updateWidget({
     required List<MemberCard> matchedCards,
+    List<MemberCard> allCards = const [],
     MemberCard? recentCard,
     NearestStoreInfo? nearestStore,
   }) async {
@@ -55,8 +56,8 @@ class WidgetService {
       await HomeWidget.saveWidgetData<int>('widget_current_index', 0);
 
       if (matchedCards.isEmpty) {
-        // 無符合 → 顯示最近使用的卡片
-        await _updateWithNoMatch(recentCard, nearestStore);
+        // 無符合 → 優先顯示最近門市的卡片，否則顯示最近使用
+        await _updateWithNoMatch(recentCard, nearestStore, allCards);
       } else if (matchedCards.length == 1) {
         // 1 張符合 → 直接顯示條碼
         await _updateWithSingleCard(matchedCards.first);
@@ -70,19 +71,44 @@ class WidgetService {
     } catch (_) {}
   }
 
-  /// 無符合時：顯示最近使用的卡片
-  Future<void> _updateWithNoMatch(MemberCard? recentCard, NearestStoreInfo? nearestStore) async {
+  /// 無符合時：優先顯示最近門市對應的卡片，否則顯示最近使用
+  Future<void> _updateWithNoMatch(
+    MemberCard? recentCard,
+    NearestStoreInfo? nearestStore,
+    List<MemberCard> allCards,
+  ) async {
     await HomeWidget.saveWidgetData<String>(
       'widget_mode',
       WidgetDisplayMode.noMatch.name,
     );
 
-    if (recentCard != null) {
-      await _saveCardData('primary', recentCard);
-      await HomeWidget.saveWidgetData<String>(
-        'widget_title',
-        '最近使用',
+    // 優先：找最近門市品牌對應的卡片
+    MemberCard? nearestCard;
+    if (nearestStore != null) {
+      final brandLower = nearestStore.brandName.toLowerCase();
+      nearestCard = allCards.cast<MemberCard?>().firstWhere(
+        (card) => card!.storeName.toLowerCase().contains(brandLower) ||
+                   brandLower.contains(card.storeName.toLowerCase()),
+        orElse: () => null,
       );
+    }
+
+    final displayCard = nearestCard ?? recentCard;
+
+    if (displayCard != null) {
+      await _saveCardData('primary', displayCard);
+      if (nearestCard != null && nearestStore != null) {
+        // 顯示最近門市距離
+        await HomeWidget.saveWidgetData<String>(
+          'widget_title',
+          '${nearestStore.brandName}（${nearestStore.distanceText}）',
+        );
+      } else {
+        await HomeWidget.saveWidgetData<String>(
+          'widget_title',
+          '最近使用',
+        );
+      }
     } else {
       // 完全沒有卡片時顯示引導文字
       await HomeWidget.saveWidgetData<String>('widget_title', '點擊新增會員卡');

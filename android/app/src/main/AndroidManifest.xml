@@ -12,6 +12,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
@@ -55,6 +56,20 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/smart_card_widget_info" />
         </receiver>
+
+        <receiver
+            android:name=".WidgetUpdateAlarmReceiver"
+            android:exported="false"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="com.ddouwill.smartcard.ALARM_WIDGET_UPDATE" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".GeofenceBroadcastReceiver"
+            android:exported="false"
+            android:enabled="true" />
 
         <receiver
             android:name=".BootReceiver"

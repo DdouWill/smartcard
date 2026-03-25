@@ -3,8 +3,11 @@
 // ============================================================
 
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:home_widget/home_widget.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 import 'models/member_card.dart';
 import 'models/app_settings.dart';
@@ -43,10 +46,14 @@ class AppController extends ChangeNotifier {
       _settings = _db.getSettings();
       _refreshCards();
       _initError = null;
-      
+
+      // 同步卡片清單到原生端供 WidgetMatchHelper 使用
+      await _syncCardsToNative();
+
       await startBackgroundUpdates();
     } catch (e) {
       _initError = '初始化失敗：$e';
+      debugPrint("initialize error: $e");
     }
   }
 
@@ -70,30 +77,40 @@ class AppController extends ChangeNotifier {
   Future<void> addCard(MemberCard card) async {
     await _db.addCard(card);
     _refreshCards();
+    await _syncCardsToNative();
     await _updateWidgetSilently();
+    FirebaseAnalytics.instance.logEvent(
+      name: 'card_added',
+      parameters: {'store_name': card.storeName},
+    );
   }
 
   Future<void> updateCard(MemberCard card) async {
     await _db.updateCard(card);
     _refreshCards();
+    await _syncCardsToNative();
     await _updateWidgetSilently();
   }
 
   Future<void> deleteCard(String id) async {
     await _db.deleteCard(id);
     _refreshCards();
+    await _syncCardsToNative();
     await _updateWidgetSilently();
+    FirebaseAnalytics.instance.logEvent(name: 'card_deleted');
   }
 
   Future<void> deleteAllCards() async {
     await _db.clearAll();
     _refreshCards();
+    await _syncCardsToNative();
     await _updateWidgetSilently();
   }
 
   Future<void> reorderCards(List<String> orderedIds) async {
     await _db.reorderCards(orderedIds);
     _refreshCards();
+    await _syncCardsToNative();
   }
 
   MemberCard? getCardById(String id) => _db.getCardById(id);
@@ -115,6 +132,7 @@ class AppController extends ChangeNotifier {
 
       await _widgetService.updateWidget(
         matchedCards: result.matchedCards,
+        allCards: _cards,
         recentCard: mostRecentCard,
         nearestStore: result.nearestStore,
       );
@@ -161,8 +179,34 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> setupWidgetCallbacks(void Function(Uri? uri) onWidgetClicked) async {
-    _widgetService.setWidgetClickCallback(onWidgetClicked);
+    _widgetService.setWidgetClickCallback((uri) {
+      // Firebase Analytics: widget_clicked
+      final cardId = uri?.pathSegments.isNotEmpty == true ? uri!.pathSegments.last : '';
+      FirebaseAnalytics.instance.logEvent(
+        name: 'widget_clicked',
+        parameters: {'card_id': cardId},
+      );
+      onWidgetClicked(uri);
+    });
     await _widgetService.handleInitialWidgetUri(onWidgetClicked);
+  }
+
+  /// 同步簡化卡片清單到原生端 SharedPreferences
+  /// 供 Kotlin WidgetMatchHelper 在背景獨立匹配使用
+  Future<void> _syncCardsToNative() async {
+    try {
+      final list = _cards.map((card) => {
+        'id': card.id,
+        'storeName': card.storeName,
+        'barcodeValue': card.barcodeValue,
+        'barcodeFormat': card.barcodeFormat.name,
+        'cardColor': card.cardColor ?? '#2196F3',
+      }).toList();
+      await HomeWidget.saveWidgetData<String>(
+        'native_card_list',
+        jsonEncode(list),
+      );
+    } catch (_) {}
   }
 
   void _refreshCards() {
@@ -179,10 +223,11 @@ class AppController extends ChangeNotifier {
 
       await _widgetService.updateWidget(
         matchedCards: validMatched,
+        allCards: _cards,
         recentCard: mostRecentCard,
+        nearestStore: _locationResult?.nearestStore,
       );
-    } catch (_) {
-    }
+    } catch (_) {}
   }
 
   @override

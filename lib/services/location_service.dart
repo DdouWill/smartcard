@@ -150,9 +150,15 @@ class LocationService {
           return _updateLastResult(retryGpsResult);
         }
       }
-      nearest = await StoreLocationService().findNearestStore(
+      // 只搜尋使用者有卡片的品牌（透過 resolveStoreName 正規化）
+      final storeService = StoreLocationService();
+      final userBrands = allCards
+          .map((c) => storeService.resolveStoreName(c.storeName))
+          .toSet();
+      nearest = await storeService.findNearestStore(
         userLat: pos.latitude,
         userLng: pos.longitude,
+        brandFilter: userBrands,
       );
     }
     result = LocationResult(

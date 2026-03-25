@@ -12,9 +12,14 @@ import com.google.android.gms.location.*
 
 /**
  * 背景定位前台服務
- * 
+ *
  * 實作持續定位偵測，確保裝置在背景時仍能根據位置更新 Widget。
  * 遵循 Android 12+ 規範：正確處理 Foreground Service Type 與持續通知。
+ *
+ * 與 Geofence 整合：
+ * - 每次位置更新時檢查移動距離
+ * - 移動 > 200m 時重新註冊附近門市 geofence
+ * - 重設 AlarmManager 為 15 分鐘維護間隔
  */
 class LocationForegroundService : Service() {
 
@@ -22,11 +27,18 @@ class LocationForegroundService : Service() {
         private const val TAG = "LocationFgService"
         private const val NOTIFICATION_ID = 101
         private const val CHANNEL_ID = "location_service_channel"
-        
+
         // 定位間隔（毫秒）
         // 為了平衡電池與即時性，使用 5 分鐘間隔，最快 1 分鐘
         private const val UPDATE_INTERVAL = 300000L // 5 分鐘
         private const val FASTEST_INTERVAL = 60000L // 1 分鐘
+
+        // Geofence 重新註冊閾值（公尺）
+        private const val GEOFENCE_RE_REGISTER_THRESHOLD = 200f
+
+        private const val PREFS_NAME = "location_service_prefs"
+        private const val KEY_LAST_LAT = "service_last_lat"
+        private const val KEY_LAST_LNG = "service_last_lng"
     }
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -37,9 +49,9 @@ class LocationForegroundService : Service() {
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "背景定位服務已建立")
-        
+
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-        
+
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
                 locationResult.lastLocation?.let { location ->
@@ -61,10 +73,10 @@ class LocationForegroundService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        
+
         createNotificationChannel()
         val notification = createNotification()
-        
+
         // Android 10+ 必須指定 foregroundServiceType
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -77,9 +89,9 @@ class LocationForegroundService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        
+
         startLocationUpdates()
-        
+
         return START_STICKY
     }
 
@@ -109,8 +121,43 @@ class LocationForegroundService : Service() {
         intent.putExtra("longitude", location.longitude)
         sendBroadcast(intent)
 
+        // 檢查是否需要重新註冊 geofence
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val lastLat = prefs.getFloat(KEY_LAST_LAT, Float.MIN_VALUE)
+        val lastLng = prefs.getFloat(KEY_LAST_LNG, Float.MIN_VALUE)
+        val hasLastLocation = lastLat != Float.MIN_VALUE && lastLng != Float.MIN_VALUE
+
+        if (hasLastLocation) {
+            val lastLocation = Location("saved").apply {
+                latitude = lastLat.toDouble()
+                longitude = lastLng.toDouble()
+            }
+            val distance = location.distanceTo(lastLocation)
+
+            if (distance > GEOFENCE_RE_REGISTER_THRESHOLD) {
+                Log.d(TAG, "移動 ${distance}m > ${GEOFENCE_RE_REGISTER_THRESHOLD}m，重新註冊 geofence")
+                saveLocation(prefs, location)
+                GeofenceManager.registerNearbyStores(this, location.latitude, location.longitude)
+            }
+        } else {
+            // 首次位置：儲存並註冊 geofence
+            Log.d(TAG, "首次位置，初始化 geofence")
+            saveLocation(prefs, location)
+            GeofenceManager.registerNearbyStores(this, location.latitude, location.longitude)
+        }
+
         // 直接觸發 Widget 重繪，讓桌面小工具讀取最新 SharedPreferences 資料
         SmartCardWidgetProvider.updateAllWidgets(this)
+
+        // 重設 AlarmManager 為 15 分鐘維護間隔
+        WidgetUpdateAlarmReceiver.scheduleNextAlarm(this, 15)
+    }
+
+    private fun saveLocation(prefs: android.content.SharedPreferences, location: Location) {
+        prefs.edit()
+            .putFloat(KEY_LAST_LAT, location.latitude.toFloat())
+            .putFloat(KEY_LAST_LNG, location.longitude.toFloat())
+            .apply()
     }
 
     private fun createNotification(): Notification {

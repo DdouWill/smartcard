@@ -49,11 +49,30 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
         // 多卡切換的當前索引（儲存在 home_widget SharedPreferences）
         private const val KEY_CURRENT_INDEX = "widget_current_index"
 
+        private const val PREFS_WIDGET_UPDATE = "widget_update_prefs"
+        private const val KEY_LAST_UPDATE_TIME = "last_widget_update_time"
+        private const val DEBOUNCE_MILLIS = 30_000L // 30 秒 debounce
+
         /**
-         * 強制更新所有已註冊的 SmartCard Widget
-         * 由 LocationForegroundService 在位置變更時呼叫
+         * 更新所有已註冊的 SmartCard Widget（含 30 秒 debounce）
+         *
+         * Geofence ENTER 和 AlarmManager 可能同時觸發更新，
+         * 透過 debounce 避免短時間內重複刷新。
+         *
+         * @param force 若為 true 則跳過 debounce（用於使用者主動操作如導航切換）
          */
-        fun updateAllWidgets(context: Context) {
+        fun updateAllWidgets(context: Context, force: Boolean = false) {
+            if (!force) {
+                val prefs = context.getSharedPreferences(PREFS_WIDGET_UPDATE, Context.MODE_PRIVATE)
+                val lastUpdate = prefs.getLong(KEY_LAST_UPDATE_TIME, 0L)
+                val now = System.currentTimeMillis()
+                if (now - lastUpdate < DEBOUNCE_MILLIS) {
+                    android.util.Log.d("SmartCardWidget", "距離上次更新 ${now - lastUpdate}ms < ${DEBOUNCE_MILLIS}ms，跳過")
+                    return
+                }
+                prefs.edit().putLong(KEY_LAST_UPDATE_TIME, now).apply()
+            }
+
             val appWidgetManager = AppWidgetManager.getInstance(context)
             val componentName = android.content.ComponentName(context, SmartCardWidgetProvider::class.java)
             val widgetIds = appWidgetManager.getAppWidgetIds(componentName)
@@ -65,6 +84,21 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
                 context.sendBroadcast(intent)
             }
         }
+    }
+
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        // Widget 第一次被加到桌面時，啟動 alarm 排程（15 分鐘維護間隔）
+        WidgetUpdateAlarmReceiver.scheduleNextAlarm(context, 15)
+        // 啟動 geofence 初始註冊
+        GeofenceManager.reRegisterFromLastLocation(context)
+    }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        // 所有 Widget 都被移除時，取消 alarm 排程與 geofence
+        WidgetUpdateAlarmReceiver.cancelAlarm(context)
+        GeofenceManager.removeAllGeofences(context)
     }
 
     override fun onUpdate(
@@ -129,7 +163,7 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
         // 邊界檢查：已在首張按 ◀ 或末張按 ▶ 時不動作
         if (newIndex != currentIndex) {
             widgetData.edit().putInt(KEY_CURRENT_INDEX, newIndex).apply()
-            updateAllWidgets(context)
+            updateAllWidgets(context, force = true)
         }
     }
 
