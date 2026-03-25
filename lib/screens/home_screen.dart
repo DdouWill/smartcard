@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../app_controller.dart';
@@ -37,8 +38,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // 延遲讓畫面先渲染完成
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
-    const appVersion = '1.0.4'; // 對應 pubspec.yaml version
-    await UpdateService(currentVersion: appVersion).checkForUpdate(context);
+    final packageInfo = await PackageInfo.fromPlatform();
+    if (!mounted) return;
+    await UpdateService(currentVersion: packageInfo.version).checkForUpdate(context);
   }
 
   @override
