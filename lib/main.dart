@@ -1,5 +1,6 @@
 // SmartCard App 入口
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import 'app_controller.dart';
@@ -8,6 +9,12 @@ import 'services/database_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 全域鎖定直向
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
 
   // 0. 初始化 Firebase
   await Firebase.initializeApp();
