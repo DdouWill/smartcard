@@ -10,6 +10,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../app_controller.dart';
@@ -157,10 +158,16 @@ class SettingsScreen extends StatelessWidget {
               _SectionHeader(title: '關於'),
 
               // App 版本號
-              const ListTile(
-                leading: Icon(Icons.info_outline),
-                title: Text('SmartCard'),
-                subtitle: Text('版本 1.0.4'),
+              ListTile(
+                leading: const Icon(Icons.info_outline),
+                title: const Text('SmartCard'),
+                subtitle: FutureBuilder<PackageInfo>(
+                  future: PackageInfo.fromPlatform(),
+                  builder: (context, snapshot) {
+                    final version = snapshot.data?.version ?? '...';
+                    return Text('版本 $version');
+                  },
+                ),
               ),
 
               // 開發者資訊

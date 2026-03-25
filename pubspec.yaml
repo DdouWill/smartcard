@@ -1,7 +1,7 @@
 name: smartcard
 description: 智慧會員卡錢包 - 完全離線、自動偵測店家、桌面小工具顯示條碼
 publish_to: 'none'
-version: 1.0.7+8
+version: 1.0.8+9
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -18,6 +18,7 @@ dependencies:
   geolocator: ^13.0.2
   network_info_plus: ^6.1.0
   permission_handler: ^11.3.1
+  package_info_plus: ^8.0.0
   uuid: ^4.5.1
   path_provider: ^2.1.5
   flutter_secure_storage: ^9.2.2
