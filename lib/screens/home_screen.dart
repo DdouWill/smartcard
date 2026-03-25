@@ -195,7 +195,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 card: card),
                             onEdit: () async {
                               await AppRouter.pushEditCard(context, card: card);
-                              _controller.loadCards();
+                              _controller.initialize();
                             },
                             onDelete: () => _deleteCard(card),
                           );
