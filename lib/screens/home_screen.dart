@@ -193,6 +193,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             onTap: () => AppRouter.pushCardDetail(
                                 context,
                                 card: card),
+                            onEdit: () async {
+                              await AppRouter.pushEditCard(context, card: card);
+                              _controller.loadCards();
+                            },
                             onDelete: () => _deleteCard(card),
                           );
                         },
