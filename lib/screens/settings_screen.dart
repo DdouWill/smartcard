@@ -16,6 +16,7 @@ import 'package:share_plus/share_plus.dart';
 import '../app_controller.dart';
 import '../models/app_settings.dart';
 import '../services/backup_service.dart';
+import '../services/store_location_service.dart';
 
 /// 設定頁
 ///
@@ -110,6 +111,9 @@ class SettingsScreen extends StatelessWidget {
 
               // ── 資料管理區塊 ──
               _SectionHeader(title: '資料管理'),
+
+              // 更新門市資料
+              _StoreUpdateTile(),
 
               // 匯出加密備份
               ListTile(
@@ -588,6 +592,88 @@ class SettingsScreen extends StatelessWidget {
       case ScreenBrightnessMode.keepOn:
         return '顯示條碼時保持螢幕不熄滅';
     }
+  }
+}
+
+// ──────────────────────────────────────────
+// 門市資料更新元件
+// ──────────────────────────────────────────
+
+/// 更新門市座標資料（從 GitHub 下載最新版）
+class _StoreUpdateTile extends StatefulWidget {
+  @override
+  State<_StoreUpdateTile> createState() => _StoreUpdateTileState();
+}
+
+class _StoreUpdateTileState extends State<_StoreUpdateTile> {
+  bool _updating = false;
+  DateTime? _lastUpdate;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLastUpdate();
+  }
+
+  Future<void> _loadLastUpdate() async {
+    final time = await StoreLocationService().getLastUpdateTime();
+    if (mounted) setState(() => _lastUpdate = time);
+  }
+
+  Future<void> _handleUpdate() async {
+    setState(() => _updating = true);
+    try {
+      final result = await StoreLocationService().updateStoreData();
+      await _loadLastUpdate();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '更新完成：${result.brandCount} 品牌 / '
+              '${result.locationCount} 筆門市座標',
+            ),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('更新失敗：$e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _updating = false);
+    }
+  }
+
+  String _formatLastUpdate() {
+    if (_lastUpdate == null) return '尚未更新';
+    final t = _lastUpdate!;
+    final m = t.month.toString().padLeft(2, '0');
+    final d = t.day.toString().padLeft(2, '0');
+    final h = t.hour.toString().padLeft(2, '0');
+    final min = t.minute.toString().padLeft(2, '0');
+    return '最後更新：${t.year}/$m/$d $h:$min';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: _updating
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.store),
+      title: const Text('更新門市資料'),
+      subtitle: Text(_formatLastUpdate()),
+      onTap: _updating ? null : _handleUpdate,
+    );
   }
 }
 

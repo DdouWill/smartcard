@@ -192,9 +192,9 @@ void main() {
       expect(mode, equals('multipleCards'));
     });
 
-    test('multipleCards 最多取 5 張', () {
+    test('multipleCards 最多取 10 張', () {
       final matchedCards = List.generate(
-        8,
+        12,
         (i) => MemberCard(
           id: 'limit-$i',
           storeName: 'Store $i',
@@ -203,8 +203,9 @@ void main() {
         ),
       );
 
-      final displayCards = matchedCards.take(5).toList();
-      expect(displayCards.length, equals(5));
+      // 對應 WidgetService._maxCards = 10
+      final displayCards = matchedCards.take(10).toList();
+      expect(displayCards.length, equals(10));
     });
   });
 

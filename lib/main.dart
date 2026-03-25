@@ -1,5 +1,6 @@
 // SmartCard App 入口
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 import 'app_controller.dart';
 import 'app_router.dart';
@@ -7,6 +8,9 @@ import 'services/database_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 0. 初始化 Firebase
+  await Firebase.initializeApp();
 
   // 1. 初始化 Hive 加密資料庫 (含 KeyStore 金鑰處理)
   await DatabaseService().initialize();

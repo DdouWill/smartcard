@@ -62,29 +62,22 @@ void main() {
   // U7: 錯誤密碼
   // ──────────────────────────────────────────
   group('U7: 錯誤密碼', () {
-    test('用密碼 A 加密 → 用密碼 B 解密 → 結果不同或拋出例外', () {
+    test('用密碼 A 加密 → 用密碼 B 解密 → 拋出 BackupException', () {
       final plaintext = Uint8List.fromList(utf8.encode('{"cards":[]}'));
       final encrypted = backupService.encryptData(plaintext, 'correctPassword');
-
-      try {
-        final decrypted = backupService.decryptData(encrypted, 'wrongPassword');
-        // AES 用錯誤密碼可能解出亂碼而非拋例外
-        expect(decrypted, isNot(equals(plaintext)));
-      } catch (_) {
-        // 拋例外也是正確行為
-      }
+      expect(
+        () => backupService.decryptData(encrypted, 'wrongPassword'),
+        throwsA(isA<BackupException>()),
+      );
     });
 
-    test('密碼相差一字也無法解密', () {
+    test('密碼相差一字 → 拋出 BackupException', () {
       final plaintext = Uint8List.fromList(utf8.encode('secret'));
       final encrypted = backupService.encryptData(plaintext, 'password1');
-
-      try {
-        final decrypted = backupService.decryptData(encrypted, 'password2');
-        expect(decrypted, isNot(equals(plaintext)));
-      } catch (_) {
-        // 拋例外也是正確行為
-      }
+      expect(
+        () => backupService.decryptData(encrypted, 'password2'),
+        throwsA(isA<BackupException>()),
+      );
     });
   });
 

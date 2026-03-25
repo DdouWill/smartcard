@@ -8,44 +8,71 @@ void main() {
   // ──────────────────────────────────────────
 
   group('U22: LocationService debounce 邏輯', () {
-    test('debounce duration 常數為 30 秒', () {
-      // Verify the debounce constant is defined correctly.
-      // LocationService._debounceDuration is private, so we test the
-      // observable behaviour: two rapid calls should return the same
-      // cached result without actually hitting WiFi/GPS.
-
-      // We can't easily call matchCardsByLocation without real platform
-      // channels, but we can verify the debounce fields exist on the
-      // singleton and the constant is accessible via reflection-free
-      // behavioural test below.
-      final service = LocationService();
-      // After construction, there should be no cached result yet.
-      // We verify this by checking that the service is a singleton.
-      expect(identical(service, LocationService()), isTrue);
-    });
-
-    test('連續建立兩個 LocationService 取得同一 singleton', () {
+    test('singleton 且首次無快取（首次呼叫走真實邏輯）', () async {
       final a = LocationService();
       final b = LocationService();
       expect(identical(a, b), isTrue);
+
+      // 首次呼叫（兩源關閉）應走真實邏輯回傳空結果，而非快取
+      final result = await a.matchCardsByLocation(
+        allCards: [
+          MemberCard(
+            id: 'debounce-1',
+            storeName: '測試',
+            barcodeValue: '123',
+            barcodeFormat: BarcodeFormatType.qr,
+          ),
+        ],
+        enableWifi: false,
+        enableGps: false,
+      );
+
+      expect(result.matchedCards, isEmpty);
+      expect(result.trigger, LocationTrigger.none);
     });
 
-    test('debounce 邏輯：_lastResult 初始為 null 表示首次不走快取', () {
-      // LocationService is a singleton; in a fresh test environment the
-      // internal _lastResult / _lastUpdateTime should be null so that the
-      // first call always performs a real lookup.
-      //
-      // We cannot directly access private fields, but we can verify the
-      // behaviour: calling matchCardsByLocation with empty cards and both
-      // sources disabled should return an empty result (not a stale cache).
-      //
-      // NOTE: This test exercises the debounce *path* without real
-      // platform channels by disabling both WiFi and GPS.
+    test('debounce window 內不同 allCards → 仍回傳第一次快取結果', () async {
       final service = LocationService();
-      // Reset debounce state by waiting conceptually > 30s is impractical
-      // in unit tests. Instead we verify the contract: with both sources
-      // disabled, result should always be empty regardless of cache.
-      expect(service, isNotNull);
+
+      final cardsA = [
+        MemberCard(
+          id: 'debounce-a',
+          storeName: '卡片A',
+          barcodeValue: '111',
+          barcodeFormat: BarcodeFormatType.qr,
+        ),
+      ];
+
+      final result1 = await service.matchCardsByLocation(
+        allCards: cardsA,
+        enableWifi: false,
+        enableGps: false,
+      );
+
+      // 在 debounce window 內用不同 cards 呼叫
+      final cardsB = [
+        MemberCard(
+          id: 'debounce-b',
+          storeName: '卡片B',
+          barcodeValue: '222',
+          barcodeFormat: BarcodeFormatType.ean13,
+        ),
+        MemberCard(
+          id: 'debounce-c',
+          storeName: '卡片C',
+          barcodeValue: '333',
+          barcodeFormat: BarcodeFormatType.code128,
+        ),
+      ];
+
+      final result2 = await service.matchCardsByLocation(
+        allCards: cardsB,
+        enableWifi: false,
+        enableGps: false,
+      );
+
+      // 第二次應回傳快取（與第一次 identical）
+      expect(identical(result1, result2), isTrue);
     });
 
     test('matchCardsByLocation 兩源皆關閉 → 回傳空結果', () async {

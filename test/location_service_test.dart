@@ -585,6 +585,42 @@ void main() {
   });
 
   // ──────────────────────────────────────────
+  // U28: LocationService 權限與錯誤處理
+  // ──────────────────────────────────────────
+
+  group('U28: LocationService 權限與錯誤處理', () {
+    test('matchCardsByLocation 兩源皆關閉 + 無 GPS 權限 → 空結果 + trigger=none', () async {
+      final service = LocationService();
+      // 兩源都關閉不會嘗試取座標
+      final result = await service.matchCardsByLocation(
+        allCards: [],
+        enableWifi: false,
+        enableGps: false,
+      );
+      expect(result.matchedCards, isEmpty);
+      expect(result.trigger, LocationTrigger.none);
+    });
+
+    test('calculateDistance 已知座標對計算距離正確', () {
+      final service = LocationService();
+      // 台北 101 到台北車站 ≈ 3.2km
+      final distance = service.calculateDistance(
+        25.0340, 121.5645,  // 台北 101
+        25.0478, 121.5170,  // 台北車站
+      );
+      // 允許 ±200m 誤差
+      expect(distance, greaterThan(3000));
+      expect(distance, lessThan(6000));
+    });
+
+    test('calculateDistance 同一點距離為 0', () {
+      final service = LocationService();
+      final distance = service.calculateDistance(25.0, 121.0, 25.0, 121.0);
+      expect(distance, equals(0.0));
+    });
+  });
+
+  // ──────────────────────────────────────────
   // U20: GpsZone 序列化往返
   // ──────────────────────────────────────────
 

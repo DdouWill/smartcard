@@ -3,8 +3,10 @@
 // 支援 bounding box 5km 粗篩，只載入使用者附近的門市
 
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../models/member_card.dart';
 
@@ -107,15 +109,98 @@ class StoreLocationService {
   /// 每緯度約 111 km
   static const double _kmPerDegreeLat = 111.0;
 
-  /// 載入 store_locations.json（lazy，只讀一次）
+  /// 本地更新檔案名稱
+  static const _localFileName = 'store_locations.json';
+
+  /// GitHub raw content URL
+  static const _remoteUrl =
+      'https://raw.githubusercontent.com/DdouWill/smartcard/main/lib/data/store_locations.json';
+
+  /// 載入門市資料（優先讀本地更新檔，fallback 到 asset）
   Future<Map<String, dynamic>> _loadData() async {
     if (_storesData != null) return _storesData!;
 
-    final jsonString =
-        await rootBundle.loadString('lib/data/store_locations.json');
+    String jsonString;
+
+    // 優先嘗試讀取本地更新檔
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final localFile = File('${dir.path}/$_localFileName');
+      if (await localFile.exists()) {
+        jsonString = await localFile.readAsString();
+      } else {
+        jsonString =
+            await rootBundle.loadString('lib/data/store_locations.json');
+      }
+    } catch (_) {
+      jsonString =
+          await rootBundle.loadString('lib/data/store_locations.json');
+    }
+
     final decoded = json.decode(jsonString) as Map<String, dynamic>;
     _storesData = decoded['stores'] as Map<String, dynamic>;
     return _storesData!;
+  }
+
+  /// 從遠端下載最新門市資料並儲存到本地
+  ///
+  /// 回傳更新結果：品牌數 / 門市總數
+  /// 失敗時拋出 Exception
+  Future<StoreUpdateResult> updateStoreData() async {
+    final client = HttpClient();
+    try {
+      final request = await client.getUrl(Uri.parse(_remoteUrl));
+      request.headers.set('User-Agent', 'SmartCard-App');
+      final response = await request.close();
+
+      if (response.statusCode != 200) {
+        throw Exception('下載失敗 (HTTP \${response.statusCode})');
+      }
+
+      final jsonString = await response.transform(utf8.decoder).join();
+
+      // 驗證 JSON 格式
+      final decoded = json.decode(jsonString) as Map<String, dynamic>;
+      final stores = decoded['stores'] as Map<String, dynamic>?;
+      if (stores == null || stores.isEmpty) {
+        throw Exception('資料格式錯誤');
+      }
+
+      // 計算統計
+      int totalLocations = 0;
+      for (final brand in stores.values) {
+        final locs =
+            (brand as Map<String, dynamic>)['locations'] as List<dynamic>?;
+        totalLocations += locs?.length ?? 0;
+      }
+
+      // 儲存到本地
+      final dir = await getApplicationDocumentsDirectory();
+      final localFile = File('${dir.path}/$_localFileName');
+      await localFile.writeAsString(jsonString);
+
+      // 清除快取，下次讀取使用新資料
+      _storesData = null;
+
+      return StoreUpdateResult(
+        brandCount: stores.length,
+        locationCount: totalLocations,
+      );
+    } finally {
+      client.close();
+    }
+  }
+
+  /// 取得本地更新檔的修改時間（null 表示尚未更新過）
+  Future<DateTime?> getLastUpdateTime() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final localFile = File('${dir.path}/$_localFileName');
+      if (await localFile.exists()) {
+        return await localFile.lastModified();
+      }
+    } catch (_) {}
+    return null;
   }
 
   /// 取得指定品牌的所有門市座標，轉為 GpsZone
@@ -310,6 +395,17 @@ class StoreLocationService {
   }
 }
 
+
+/// 門市資料更新結果
+class StoreUpdateResult {
+  final int brandCount;
+  final int locationCount;
+
+  const StoreUpdateResult({
+    required this.brandCount,
+    required this.locationCount,
+  });
+}
 
 /// 最近門市資訊
 class NearestStoreInfo {

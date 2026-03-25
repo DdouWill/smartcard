@@ -178,20 +178,13 @@ void main() {
       expect(service, isNotNull);
     });
 
-    test('getNearbyStoreLocations 不會 crash', () async {
+    test('getNearbyStoreLocations 回傳 List 或在 test 環境拋 rootBundle 錯誤', () async {
       final service = StoreLocationService();
-      // 台北市座標，測試不 crash
-      try {
-        final results = await service.getNearbyStoreLocations(
-          '7-ELEVEN',
-          userLat: 25.0330,
-          userLng: 121.5654,
-        );
-        expect(results, isList);
-      } catch (e) {
-        // rootBundle 在 test 環境不可用，接受 FlutterError 或 Exception
-        expect(e != null, isTrue);
-      }
+      // flutter test 環境下 rootBundle 不可用，應拋出 FlutterError
+      expect(
+        () => service.getNearbyStoreLocations('7-ELEVEN', userLat: 25.0, userLng: 121.0),
+        throwsA(anything),
+      );
     });
   });
 
@@ -296,9 +289,9 @@ void main() {
   // ──────────────────────────────────────────
   group('V104-W: 地圖選點', () {
     test('MapPickerScreen class 存在', () {
-      // 確認 import 不會 crash
-      expect(true, isTrue);
-    });
+      // MapPickerScreen 需要完整的 Widget 環境和地圖 SDK
+      // 功能覆蓋由 e2e 測試處理
+    }, skip: '需要地圖 SDK，由 e2e 覆蓋');
   });
 
   // ──────────────────────────────────────────
@@ -306,9 +299,6 @@ void main() {
   // ──────────────────────────────────────────
   group('V104-W: Widget 多卡導航', () {
     test('widget_service 支援多卡資料儲存', () {
-      // WidgetService 的 updateWidget 會存 card_0_*, card_1_* 等
-      // 這裡驗證常數定義
-      expect(true, isTrue); // 結構驗證在 data_flow_test 中
-    });
+    }, skip: '由 widget_service_test.dart U16 覆蓋');
   });
 }

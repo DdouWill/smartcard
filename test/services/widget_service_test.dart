@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smartcard/models/member_card.dart';
+import 'package:smartcard/services/store_location_service.dart';
 import 'package:smartcard/services/widget_service.dart';
 
 void main() {
@@ -84,6 +85,25 @@ void main() {
       expect(savedData['primary_store_name'], '');
       expect(savedData['primary_barcode_value'], '');
     });
+
+    test('0 匹配 + nearestStore 非 null → 寫入 nearest_store_text', () async {
+      final recentCard = createCard(id: 'r1', storeName: '測試', barcodeValue: 'X');
+      await widgetService.updateWidget(
+        matchedCards: [],
+        recentCard: recentCard,
+        nearestStore: NearestStoreInfo(
+          brandName: '7-ELEVEN',
+          distanceMeters: 200,
+          zone: GpsZone(latitude: 25.0, longitude: 121.0),
+        ),
+      );
+      expect(savedData['nearest_store_text'], '7-ELEVEN（200m）');
+    });
+
+    test('nearestStore 為 null → nearest_store_text 為空字串', () async {
+      await widgetService.updateWidget(matchedCards: [], recentCard: null, nearestStore: null);
+      expect(savedData['nearest_store_text'], '');
+    });
   });
 
   // ──────────────────────────────────────────
@@ -138,9 +158,9 @@ void main() {
       }
     });
 
-    test('超過 5 張卡片 → 截斷為 5', () async {
+    test('超過 10 張卡片 → 截斷為 10', () async {
       final cards = List.generate(
-        8,
+        12,
         (i) => createCard(
           id: 'many-$i',
           storeName: '店$i',
@@ -151,11 +171,11 @@ void main() {
       await widgetService.updateWidget(matchedCards: cards);
 
       expect(savedData['widget_mode'], 'multipleCards');
-      expect(savedData['widget_title'], '附近 8 家店');
-      expect(savedData['card_count'], 5); // 截斷為 5
+      expect(savedData['widget_title'], '附近 12 家店');
+      expect(savedData['card_count'], 10); // _maxCards = 10
 
-      // 前 5 張有資料
-      for (int i = 0; i < 5; i++) {
+      // 前 10 張有資料
+      for (int i = 0; i < 10; i++) {
         expect(savedData['card_${i}_store_name'], '店$i');
       }
     });

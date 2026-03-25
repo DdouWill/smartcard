@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:smartcard/app_controller.dart';
 import 'package:smartcard/models/member_card.dart';
 import 'package:smartcard/services/database_service.dart';
+import 'package:smartcard/services/location_service.dart';
 
 /// 建立全聯卡片（每次新建避免 HiveObject 重複綁定）
 MemberCard makeCardA() => MemberCard(
@@ -43,6 +44,22 @@ MemberCard makeCardB() => MemberCard(
       ],
       ssidKeywords: ['7-ELEVEN', 'ibon'],
     );
+
+bool _isInAnyZone(List<MemberCard> cards, double lat, double lng) {
+  final ls = LocationService();
+  return cards.where((card) => card.gpsZones.any((zone) {
+    final distance = ls.calculateDistance(lat, lng, zone.latitude, zone.longitude);
+    return distance <= zone.radiusMeters;
+  })).toList().isNotEmpty;
+}
+
+List<MemberCard> _matchByGps(List<MemberCard> cards, double lat, double lng) {
+  final ls = LocationService();
+  return cards.where((card) => card.gpsZones.any((zone) {
+    final distance = ls.calculateDistance(lat, lng, zone.latitude, zone.longitude);
+    return distance <= zone.radiusMeters;
+  })).toList();
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -207,14 +224,7 @@ void main() {
       const userLat = 24.1631;
       const userLng = 120.6476;
 
-      final matched = [cardA, cardB].where((card) {
-        return card.gpsZones.any((zone) {
-          final dLat = (userLat - zone.latitude) * 111195.0;
-          final dLng = (userLng - zone.longitude) * 111195.0 * 0.9;
-          final distance = (dLat * dLat + dLng * dLng);
-          return distance <= zone.radiusMeters * zone.radiusMeters;
-        });
-      }).toList();
+      final matched = _matchByGps([cardA, cardB], userLat, userLng);
 
       expect(matched.length, 1);
       expect(matched.first.id, 'loc-card-a');
@@ -228,14 +238,7 @@ void main() {
       const userLat = 25.0333;
       const userLng = 121.5654;
 
-      final matched = [cardA, cardB].where((card) {
-        return card.gpsZones.any((zone) {
-          final dLat = (userLat - zone.latitude) * 111195.0;
-          final dLng = (userLng - zone.longitude) * 111195.0 * 0.9;
-          final distance = (dLat * dLat + dLng * dLng);
-          return distance <= zone.radiusMeters * zone.radiusMeters;
-        });
-      }).toList();
+      final matched = _matchByGps([cardA, cardB], userLat, userLng);
 
       expect(matched.length, 1);
       expect(matched.first.id, 'loc-card-b');
@@ -248,14 +251,7 @@ void main() {
       const userLat = 23.0;
       const userLng = 119.0;
 
-      final matched = [cardA, cardB].where((card) {
-        return card.gpsZones.any((zone) {
-          final dLat = (userLat - zone.latitude) * 111195.0;
-          final dLng = (userLng - zone.longitude) * 111195.0 * 0.9;
-          final distance = (dLat * dLat + dLng * dLng);
-          return distance <= zone.radiusMeters * zone.radiusMeters;
-        });
-      }).toList();
+      final matched = _matchByGps([cardA, cardB], userLat, userLng);
 
       expect(matched, isEmpty);
     });
