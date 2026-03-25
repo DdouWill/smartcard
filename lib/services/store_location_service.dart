@@ -10,6 +10,91 @@ import '../models/member_card.dart';
 
 /// 門市座標服務（Singleton）
 /// 讀取 store_locations.json，依品牌名稱回傳門市 GPS 圍欄
+
+/// 店名別名映射：手動輸入的常見名稱 → store_locations.json 的正式 key
+const _storeNameAliases = <String, String>{
+  // 7-ELEVEN
+  '7-11': '7-ELEVEN',
+  '711': '7-ELEVEN',
+  '小七': '7-ELEVEN',
+  '7eleven': '7-ELEVEN',
+  '7-eleven': '7-ELEVEN',
+  'seven': '7-ELEVEN',
+  'seven eleven': '7-ELEVEN',
+  // 全家
+  '全家': '全家 FamilyMart',
+  'familymart': '全家 FamilyMart',
+  'family mart': '全家 FamilyMart',
+  // 萊爾富
+  '萊爾富': '萊爾富 Hi-Life',
+  'hilife': '萊爾富 Hi-Life',
+  'hi-life': '萊爾富 Hi-Life',
+  // OK
+  'ok': 'OK 超商',
+  'ok超商': 'OK 超商',
+  // 全聯
+  '全聯': '全聯福利中心',
+  // 家樂福
+  '家樂福': '家樂福 Carrefour',
+  'carrefour': '家樂福 Carrefour',
+  // 好市多
+  '好市多': '好市多 Costco',
+  'costco': '好市多 Costco',
+  // 屈臣氏
+  '屈臣氏': '屈臣氏 Watsons',
+  'watsons': '屈臣氏 Watsons',
+  // 康是美
+  '康是美': '康是美 COSMED',
+  'cosmed': '康是美 COSMED',
+  // 寶雅
+  '寶雅': '寶雅 POYA',
+  'poya': '寶雅 POYA',
+  // 路易莎
+  '路易莎': '路易莎 Louisa',
+  'louisa': '路易莎 Louisa',
+  // 星巴克
+  '星巴克': '星巴克 Starbucks',
+  'starbucks': '星巴克 Starbucks',
+  // cama
+  'cama': 'cama café',
+  // 摩斯
+  '摩斯': '摩斯漢堡',
+  '摩斯漢堡 MOS': '摩斯漢堡',
+  'mos': '摩斯漢堡',
+  // 麥當勞
+  '麥當勞 McDonald': '麥當勞',
+  'mcdonalds': '麥當勞',
+  "mcdonald's": '麥當勞',
+  // 肯德基
+  '肯德基': '肯德基 KFC',
+  'kfc': '肯德基 KFC',
+  // 八方雲集
+  '八方': '八方雲集',
+  // 全國電子
+  '全國電子 elife': '全國電子',
+  // 燦坤
+  '燦坤': '燦坤 3C',
+  // 大潤發
+  '大潤發 RT-Mart': '大潤發',
+  // 美廉社
+  '美廉社 Simple Mart': '美廉社',
+  // 大創
+  '大創': '大創 DAISO',
+  'daiso': '大創 DAISO',
+  // 誠品
+  '誠品書店': '誠品',
+  '誠品生活': '誠品',
+  // 中油
+  '中油': '中油 CPC',
+  'cpc': '中油 CPC',
+  // 台塑
+  '台塑': '台塑 FPCC',
+  // 新光三越
+  '新光': '新光三越',
+  // 遠百
+  '遠百': '遠東百貨',
+};
+
 class StoreLocationService {
   static final StoreLocationService _instance =
       StoreLocationService._internal();
@@ -65,7 +150,9 @@ class StoreLocationService {
     required double userLng,
     double radiusKm = 5.0,
   }) async {
-    final allZones = await getStoreLocations(brandName);
+    // 嘗試別名解析（支援手動輸入的非標準店名）
+    final resolvedName = resolveStoreName(brandName);
+    final allZones = await getStoreLocations(resolvedName);
     if (allZones.isEmpty) return [];
 
     // Bounding box 粗篩
@@ -84,6 +171,31 @@ class StoreLocationService {
           zone.longitude >= minLng &&
           zone.longitude <= maxLng;
     }).toList();
+  }
+
+  /// 解析店名：精確匹配 → 別名匹配 → 模糊匹配（不分大小寫）
+  String resolveStoreName(String input) {
+    // 1. 精確匹配
+    final stores = _storesData;
+    if (stores != null && stores.containsKey(input)) return input;
+
+    // 2. 別名匹配（不分大小寫）
+    final lower = input.toLowerCase().trim();
+    if (_storeNameAliases.containsKey(lower)) {
+      return _storeNameAliases[lower]!;
+    }
+
+    // 3. 模糊匹配：輸入包含品牌 key 或品牌 key 包含輸入
+    if (stores != null) {
+      for (final key in stores.keys) {
+        final keyLower = key.toLowerCase();
+        if (keyLower.contains(lower) || lower.contains(keyLower)) {
+          return key;
+        }
+      }
+    }
+
+    return input; // 無匹配，原樣回傳
   }
 
   /// 檢查指定品牌是否有門市座標資料
