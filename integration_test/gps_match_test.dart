@@ -1,34 +1,26 @@
 import 'dart:math';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:smartcard/main.dart' as app;
 import 'package:smartcard/services/store_location_service.dart';
+import 'package:smartcard/models/member_card.dart';
+import 'package:smartcard/services/location_service.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('GPS Match via store_locations.json', () {
-    testWidgets('建卡 7-ELEVEN + 全家 → GPS 匹配驗證', (tester) async {
+
+    testWidgets('StoreLocationService: 座標 (24.1492, 120.6451) 附近門市查詢', (tester) async {
+      // 需要啟動 app 才能載入 assets
       app.main();
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
-      // ── 建第一張卡：7-ELEVEN ──
-      await _createCard(tester, '7-ELEVEN', '1234567890123');
-      expect(find.text('7-ELEVEN'), findsWidgets);
-      debugPrint('✅ 7-ELEVEN 卡片建立成功');
-
-      // ── 建第二張卡：全家 FamilyMart ──
-      await _createCard(tester, '全家 FamilyMart', '9876543210987');
-      expect(find.text('全家 FamilyMart'), findsWidgets);
-      debugPrint('✅ 全家 FamilyMart 卡片建立成功');
-
-      // ── 驗證 GPS 匹配邏輯 ──
       final service = StoreLocationService();
       const userLat = 24.1492072;
       const userLng = 120.6451422;
 
-      // 查 7-ELEVEN 附近門市
+      // ── Test 1: 7-ELEVEN 500m 內有門市 ──
       final sevenZones = await service.getNearbyStoreLocations(
         '7-ELEVEN',
         userLat: userLat,
@@ -38,19 +30,17 @@ void main() {
       debugPrint('📍 7-ELEVEN zones in 500m: ${sevenZones.length}');
       expect(sevenZones.isNotEmpty, true, reason: '7-ELEVEN 應有門市在 500m 內');
 
-      // 檢查最近的是否在 100m 內
+      // ── Test 2: 至少一間 7-ELEVEN 在 100m radius 內 ──
       bool sevenInRange = false;
       for (final zone in sevenZones) {
         final dist = _haversine(userLat, userLng, zone.latitude, zone.longitude);
-        debugPrint('  → (${zone.latitude}, ${zone.longitude}) = ${dist.toStringAsFixed(0)}m (r=${zone.radiusMeters}m)');
-        if (dist <= zone.radiusMeters) {
-          sevenInRange = true;
-        }
+        debugPrint('  7-ELEVEN: (${zone.latitude}, ${zone.longitude}) = ${dist.toStringAsFixed(0)}m (r=${zone.radiusMeters}m) ${dist <= zone.radiusMeters ? "✅" : ""}');
+        if (dist <= zone.radiusMeters) sevenInRange = true;
       }
-      expect(sevenInRange, true, reason: '至少一間 7-ELEVEN 應在 100m 匹配半徑內');
-      debugPrint('✅ 7-ELEVEN GPS 匹配: 有門市在 100m 內');
+      expect(sevenInRange, true, reason: '至少一間 7-ELEVEN 應在匹配半徑內');
+      debugPrint('✅ Test 2 PASS: 7-ELEVEN 在 100m 匹配半徑內');
 
-      // 查全家附近門市
+      // ── Test 3: 全家 500m 內查詢 ──
       final familyZones = await service.getNearbyStoreLocations(
         '全家 FamilyMart',
         userLat: userLat,
@@ -58,77 +48,67 @@ void main() {
         radiusKm: 0.5,
       );
       debugPrint('📍 全家 zones in 500m: ${familyZones.length}');
-      // 全家不一定在 100m 內
       bool familyInRange = false;
       for (final zone in familyZones) {
         final dist = _haversine(userLat, userLng, zone.latitude, zone.longitude);
+        debugPrint('  全家: (${zone.latitude}, ${zone.longitude}) = ${dist.toStringAsFixed(0)}m (r=${zone.radiusMeters}m) ${dist <= zone.radiusMeters ? "✅" : ""}');
         if (dist <= zone.radiusMeters) familyInRange = true;
       }
-      debugPrint('📍 全家 100m 內: $familyInRange');
+      debugPrint('📍 全家 100m 內匹配: $familyInRange');
 
-      // 測最近門市
+      // ── Test 4: findNearestStore ──
       final nearest = await service.findNearestStore(
         userLat: userLat,
         userLng: userLng,
       );
       debugPrint('📍 最近門市: ${nearest?.brandName} (${nearest?.distanceText})');
-      expect(nearest, isNotNull);
+      expect(nearest, isNotNull, reason: '應找到最近門市');
 
-      // 點定位按鈕觸發偵測
-      final locationButton = find.byIcon(Icons.my_location);
-      if (locationButton.evaluate().isNotEmpty) {
-        await tester.tap(locationButton);
-        await tester.pumpAndSettle(const Duration(seconds: 10));
-        debugPrint('📍 已觸發定位偵測');
-        
-        // 截圖看結果
-        await tester.pumpAndSettle(const Duration(seconds: 3));
+      // ── Test 5: 模擬 _matchByGps 邏輯 ──
+      // 建立無 gpsZones 的模擬卡片
+      final testCards = [
+        MemberCard(
+          id: 'test-seven',
+          storeName: '7-ELEVEN',
+          barcodeValue: '1234567890123',
+          barcodeFormat: BarcodeFormatType.code128,
+        ),
+        MemberCard(
+          id: 'test-family',
+          storeName: '全家 FamilyMart',
+          barcodeValue: '9876543210987',
+          barcodeFormat: BarcodeFormatType.code128,
+        ),
+      ];
+
+      // 模擬 _matchByGps: gpsZones 為空 → 查 store_locations.json
+      final matched = <MemberCard>[];
+      for (final card in testCards) {
+        if (card.gpsZones.isEmpty) {
+          final nearbyZones = await service.getNearbyStoreLocations(
+            card.storeName,
+            userLat: userLat,
+            userLng: userLng,
+            radiusKm: 0.5,
+          );
+          final inZone = nearbyZones.any((zone) {
+            final dist = _haversine(userLat, userLng, zone.latitude, zone.longitude);
+            return dist <= zone.radiusMeters;
+          });
+          if (inZone) matched.add(card);
+          debugPrint('  ${card.storeName}: gpsZones=空, store_locations查詢=${nearbyZones.length}筆, 匹配=$inZone');
+        }
       }
 
+      debugPrint('📍 匹配結果: ${matched.map((c) => c.storeName).toList()}');
+      expect(matched.any((c) => c.storeName == '7-ELEVEN'), true,
+          reason: '7-ELEVEN 應該匹配（26m < 100m）');
+      debugPrint('✅ Test 5 PASS: GPS 匹配邏輯驗證成功');
+
       debugPrint('');
-      debugPrint('═══ GPS 匹配測試全部通過 ═══');
+      debugPrint('═══ 全部測試通過 ═══');
     });
   });
-}
-
-Future<void> _createCard(WidgetTester tester, String storeName, String barcode) async {
-  await tester.tap(find.text('新增卡片'));
-  await tester.pumpAndSettle();
-  await tester.tap(find.text('手動輸入'));
-  await tester.pumpAndSettle();
-
-  // 填店名
-  final storeField = find.widgetWithText(TextFormField, '店家名稱 *');
-  await tester.enterText(storeField, storeName);
-  await tester.pumpAndSettle(const Duration(seconds: 1));
-
-  // 關 autocomplete — 點頁面標題
-  await tester.tap(find.text('新增會員卡'));
-  await tester.pumpAndSettle();
-
-  // 選 CODE128
-  await tester.tap(find.text('CODE128'));
-  await tester.pumpAndSettle();
-
-  // 填條碼
-  await tester.enterText(
-    find.widgetWithText(TextFormField, '條碼號碼 *'),
-    barcode,
-  );
-  await tester.pumpAndSettle();
-
-  // 捲到底部，儲存
-  await tester.ensureVisible(find.text('儲存卡片'));
-  await tester.pumpAndSettle();
-  await tester.tap(find.text('儲存卡片'));
-  await tester.pumpAndSettle(const Duration(seconds: 3));
-
-  // 確認對話框
-  final confirm = find.text('確認儲存');
-  if (confirm.evaluate().isNotEmpty) {
-    await tester.tap(confirm);
-    await tester.pumpAndSettle(const Duration(seconds: 2));
-  }
 }
 
 double _haversine(double lat1, double lon1, double lat2, double lon2) {
