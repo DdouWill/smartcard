@@ -93,16 +93,7 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
         elevation: 0,
         foregroundColor: Colors.white,
         title: Text('${getStoreEmoji(widget.card.storeName)} ${widget.card.storeName}'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            tooltip: '編輯卡片',
-            onPressed: () async {
-              await AppRouter.pushEditCard(context, card: widget.card);
-              if (mounted) Navigator.pop(context); // 回到 HomeScreen 重新載入
-            },
-          ),
-        ],
+
       ),
       body: SafeArea(
         child: Center(
