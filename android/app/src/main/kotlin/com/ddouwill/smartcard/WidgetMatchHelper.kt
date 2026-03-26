@@ -17,8 +17,9 @@ object WidgetMatchHelper {
 
     private const val TAG = "WidgetMatchHelper"
 
-    // 門市匹配半徑（公尺）
-    private const val MATCH_RADIUS = 500f
+    // 門市匹配半徑（公尺）── 需與 Flutter 端 (store_location_service.dart)
+    // 及 GeofenceManager.kt (GEOFENCE_RADIUS) 保持同步
+    private const val MATCH_RADIUS = 200f
 
     // noMatch 時顯示最近門市卡片的最大距離（公尺）
     private const val NEAREST_STORE_MAX_DISTANCE = 1000f
@@ -29,7 +30,7 @@ object WidgetMatchHelper {
     /**
      * 根據目前位置匹配使用者卡片並更新 widget
      *
-     * 1. 讀取 store_locations.json → 找半徑 500m 內的門市品牌
+     * 1. 讀取 store_locations.json → 找半徑 200m 內的門市品牌
      * 2. 讀取 native_card_list → 解析使用者卡片
      * 3. 比對卡片的 storeName 是否包含附近門市品牌關鍵字
      * 4. 匹配結果寫入 widget SharedPreferences（與 Flutter WidgetService 格式一致）
@@ -38,7 +39,7 @@ object WidgetMatchHelper {
     fun matchAndUpdateWidget(context: Context, latitude: Double, longitude: Double) {
         Log.d(TAG, "開始匹配 (lat=$latitude, lng=$longitude)")
 
-        // 1. 找附近 500m 內的門市品牌
+        // 1. 找附近 200m 內的門市品牌
         val nearbyBrands = findNearbyBrands(context, latitude, longitude)
         Log.d(TAG, "附近品牌: $nearbyBrands")
 
@@ -143,7 +144,7 @@ object WidgetMatchHelper {
     // ──────────────────────────────────────────
 
     /**
-     * 從 store_locations.json 找出半徑 500m 內的所有品牌
+     * 從 store_locations.json 找出半徑 200m 內的所有品牌
      */
     private fun findNearbyBrands(
         context: Context,
