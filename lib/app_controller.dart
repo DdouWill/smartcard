@@ -36,7 +36,6 @@ class AppController extends ChangeNotifier {
   LocationResult? get locationResult => _locationResult;
   bool get isDetecting => _isDetecting;
   String? get initError => _initError;
-  MemberCard? get mostRecentCard => _cards.isNotEmpty ? _cards.first : null;
   bool get hasCards => _cards.isNotEmpty;
 
   ValueListenable<Box<MemberCard>> get cardsListenable => _db.cardsListenable;
@@ -133,7 +132,6 @@ class AppController extends ChangeNotifier {
       await _widgetService.updateWidget(
         matchedCards: result.matchedCards,
         allCards: _cards,
-        recentCard: mostRecentCard,
         nearestStore: result.nearestStore,
       );
     } catch (_) {
@@ -224,7 +222,6 @@ class AppController extends ChangeNotifier {
       await _widgetService.updateWidget(
         matchedCards: validMatched,
         allCards: _cards,
-        recentCard: mostRecentCard,
         nearestStore: _locationResult?.nearestStore,
       );
     } catch (_) {}

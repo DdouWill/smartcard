@@ -74,12 +74,12 @@ void main() {
       expect(gpsSwitch.value, isTrue);
     });
 
-    testWidgets('無符合時顯示最近使用開關可見且預設開啟', (tester) async {
+    testWidgets('無符合時顯示最近門市開關可見且預設開啟', (tester) async {
       await tester.pumpWidget(buildApp());
       await tester.pump(const Duration(milliseconds: 500));
 
       final recentSwitch = tester.widget<SwitchListTile>(
-        find.widgetWithText(SwitchListTile, '無符合時顯示最近使用'),
+        find.widgetWithText(SwitchListTile, '無符合時顯示最近門市'),
       );
       expect(recentSwitch.value, isTrue);
     });

@@ -175,7 +175,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               LocationStatusCard(
                 locationResult: _controller.locationResult,
                 isDetecting: _controller.isDetecting,
-                recentCard: _controller.mostRecentCard,
+                allCards: _controller.cards,
                 onCardTap: (card) =>
                     AppRouter.pushCardDetail(context, card: card),
               ),

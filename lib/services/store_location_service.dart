@@ -10,6 +10,9 @@ import 'package:path_provider/path_provider.dart';
 
 import '../models/member_card.dart';
 
+/// noMatch 時顯示最近門市卡片的最大距離（公尺）
+const double kNearestStoreMaxDistanceMeters = 1000;
+
 /// 門市座標服務（Singleton）
 /// 讀取 store_locations.json，依品牌名稱回傳門市 GPS 圍欄
 

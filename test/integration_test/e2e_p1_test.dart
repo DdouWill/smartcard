@@ -262,17 +262,17 @@ void main() {
   // E10: 設定：顯示最近卡片開關
   // ──────────────────────────────────────────
   group('E10: 設定：顯示最近卡片開關', () {
-    testWidgets('切換「無符合時顯示最近使用」→ 關 → 開', (tester) async {
+    testWidgets('切換「無符合時顯示最近門市」→ 關 → 開', (tester) async {
       await tester.pumpWidget(buildSettings());
       await tester.pumpAndSettle();
 
       expect(controller.settings.showRecentOnEmpty, isTrue);
 
-      await tester.tap(find.widgetWithText(SwitchListTile, '無符合時顯示最近使用'));
+      await tester.tap(find.widgetWithText(SwitchListTile, '無符合時顯示最近門市'));
       await tester.pumpAndSettle();
       expect(controller.settings.showRecentOnEmpty, isFalse);
 
-      await tester.tap(find.widgetWithText(SwitchListTile, '無符合時顯示最近使用'));
+      await tester.tap(find.widgetWithText(SwitchListTile, '無符合時顯示最近門市'));
       await tester.pumpAndSettle();
       expect(controller.settings.showRecentOnEmpty, isTrue);
     });

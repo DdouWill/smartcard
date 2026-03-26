@@ -6,7 +6,7 @@
 //   - 偵測中：進度條 + "正在偵測附近店家..."
 //   - 偵測到單一店家：店家名稱 + 條碼縮圖（Hero 動畫）
 //   - 偵測到多家：多家名稱橫向滾動列表
-//   - 無符合：顯示最近使用卡片（半透明樣式）
+//   - 無符合：顯示最近門市卡片（半透明 + 距離標注）或「附近無符合店家」
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -25,7 +25,7 @@ import 'barcode_display_widget.dart';
 /// LocationStatusCard(
 ///   locationResult: controller.locationResult,
 ///   isDetecting: controller.isDetecting,
-///   recentCard: controller.mostRecentCard,
+///   allCards: controller.cards,
 ///   onCardTap: (card) => Navigator.push(...),
 /// )
 /// ```
@@ -36,8 +36,8 @@ class LocationStatusCard extends StatelessWidget {
   /// 是否正在偵測中
   final bool isDetecting;
 
-  /// 最近使用的卡片（無符合時顯示）
-  final MemberCard? recentCard;
+  /// 所有使用者卡片（供 noMatch 時比對最近門市品牌用）
+  final List<MemberCard> allCards;
 
   /// 點擊卡片回調（導航至對應卡片詳情）
   final void Function(MemberCard card) onCardTap;
@@ -47,7 +47,7 @@ class LocationStatusCard extends StatelessWidget {
     required this.locationResult,
     required this.isDetecting,
     required this.onCardTap,
-    this.recentCard,
+    this.allCards = const [],
   });
 
   @override
@@ -74,7 +74,7 @@ class LocationStatusCard extends StatelessWidget {
       return _buildMultiMatchCard(context, matched);
     }
 
-    // 無符合 → 顯示最近使用
+    // 無符合 → 顯示最近門市或空狀態
     return _buildNoMatchCard(context);
   }
 
@@ -351,153 +351,108 @@ class LocationStatusCard extends StatelessWidget {
   }
 
   // ──────────────────────────────────────────
-  // 無符合（顯示最近使用，半透明樣式）
+  // 無符合（顯示最近門市卡片或空狀態）
   // ──────────────────────────────────────────
 
-  Widget _buildNoMatchCard(BuildContext context) {
-    // 如果沒有最近使用卡片，顯示簡單提示（含最近門市資訊）
-    if (recentCard == null) {
-      final nearest = locationResult?.nearestStore;
-      return Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.location_off,
-                    color: Theme.of(context).colorScheme.outline,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '附近無符合店家',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
-                  ),
-                ],
-              ),
-              if (nearest != null) ...[
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const SizedBox(width: 24),
-                    Icon(
-                      Icons.near_me,
-                      color: Theme.of(context).colorScheme.outline.withOpacity(0.6),
-                      size: 14,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${nearest.brandName}（${nearest.distanceText}・需在 100m 內）',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.outline.withOpacity(0.8),
-                          ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
-          ),
-        ),
-      );
+  /// 找出最近門市品牌對應的使用者卡片
+  MemberCard? _findNearestBrandCard(NearestStoreInfo nearest) {
+    if (allCards.isEmpty) return null;
+    final brandLower = nearest.brandName.toLowerCase();
+    for (final card in allCards) {
+      final storeLower = card.storeName.toLowerCase();
+      if (storeLower.contains(brandLower) || brandLower.contains(storeLower)) {
+        return card;
+      }
     }
+    return null;
+  }
 
-    // 最近門市提示
+  Widget _buildNoMatchCard(BuildContext context) {
     final nearest = locationResult?.nearestStore;
 
-    // 顯示最近使用卡片（半透明）
-    final card = recentCard!;
-    final cardColor = parseHexColor(card.cardColor) ??
-        Theme.of(context).colorScheme.primaryContainer;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (nearest != null)
-          Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.near_me,
-                    color: Theme.of(context).colorScheme.outline.withOpacity(0.6),
-                    size: 14,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '最近：${nearest.brandName}（${nearest.distanceText}・需在 100m 內）',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.outline.withOpacity(0.8),
-                        ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        Opacity(
-          opacity: 0.7, // 半透明表示非精確匹配
-      child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: InkWell(
-          onTap: () => onCardTap(card),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                // 最近使用標示
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    // 有最近門市、距離 <= 1000m、且有對應品牌卡片 → 顯示該卡片（半透明 + 距離標注）
+    if (nearest != null &&
+        nearest.distanceMeters <= kNearestStoreMaxDistanceMeters) {
+      final nearestCard = _findNearestBrandCard(nearest);
+      if (nearestCard != null) {
+        return Opacity(
+          opacity: 0.7,
+          child: Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: InkWell(
+              onTap: () => onCardTap(nearestCard),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
                   children: [
-                    Row(
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.history,
-                          size: 14,
-                          color: Theme.of(context).colorScheme.outline,
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.near_me,
+                              size: 14,
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '最近門市・${nearest.distanceText}',
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.outline,
+                                  ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(height: 4),
                         Text(
-                          '最近使用',
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: Theme.of(context).colorScheme.outline,
-                              ),
+                          nearestCard.storeName,
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      card.storeName,
-                      style: Theme.of(context).textTheme.titleMedium,
+                    const Spacer(),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: BarcodeDisplayWidget(
+                        barcodeValue: nearestCard.barcodeValue,
+                        barcodeFormat: nearestCard.barcodeFormat,
+                        width: 80,
+                        height: 48,
+                        showText: false,
+                      ),
                     ),
                   ],
                 ),
-                const Spacer(),
-                // 條碼縮圖
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: BarcodeDisplayWidget(
-                    barcodeValue: card.barcodeValue,
-                    barcodeFormat: card.barcodeFormat,
-                    width: 80,
-                    height: 48,
-                    showText: false,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
+        );
+      }
+    }
+
+    // 無最近門市、距離 > 1000m、或無對應品牌卡片 → 顯示空狀態
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Icon(
+              Icons.location_off,
+              color: Theme.of(context).colorScheme.outline,
+              size: 16,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '附近無符合店家',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+            ),
+          ],
         ),
       ),
-    ),
-      ],
     );
   }
 

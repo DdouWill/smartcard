@@ -89,11 +89,11 @@ class SettingsScreen extends StatelessWidget {
                 onTap: () => _showBrightnessDialog(context, controller, settings),
               ),
 
-              // 無符合時顯示最近使用
+              // 無符合時顯示最近門市
               SwitchListTile(
                 secondary: const Icon(Icons.history),
-                title: const Text('無符合時顯示最近使用'),
-                subtitle: const Text('附近無店家時顯示上次使用的卡片'),
+                title: const Text('無符合時顯示最近門市'),
+                subtitle: const Text('附近無店家時顯示最近門市的卡片'),
                 value: settings.showRecentOnEmpty,
                 onChanged: (value) {
                   controller.updateSettings(AppSettings(

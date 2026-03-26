@@ -61,10 +61,6 @@ void main() {
       expect(controller.initError, isNull);
     });
 
-    test('initialize 後 mostRecentCard 為 null（無卡片）', () {
-      expect(controller.mostRecentCard, isNull);
-    });
-
     test('有卡片時 initialize 後 cards 載入正確', () async {
       await db.addCard(MemberCard(
         id: 'init-1', storeName: '初始卡', barcodeValue: 'V1',
@@ -76,7 +72,6 @@ void main() {
       expect(controller.cards.length, 1);
       expect(controller.cards.first.storeName, '初始卡');
       expect(controller.hasCards, isTrue);
-      expect(controller.mostRecentCard?.id, 'init-1');
     });
   });
 

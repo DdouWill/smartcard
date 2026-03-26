@@ -14,7 +14,7 @@ import 'store_location_service.dart';
 /// Widget 顯示模式
 /// 對應 SPEC.md 的 Widget 行為定義
 enum WidgetDisplayMode {
-  noMatch, // 0 家符合 → 顯示最近使用
+  noMatch, // 0 家符合 → 顯示最近門市或空狀態
   singleCard, // 1 家符合 → 直接顯示條碼
   multipleCards, // 2+ 家符合 → 顯示條碼 + ◀ ▶ 切換
 }
@@ -48,7 +48,6 @@ class WidgetService {
   Future<void> updateWidget({
     required List<MemberCard> matchedCards,
     List<MemberCard> allCards = const [],
-    MemberCard? recentCard,
     NearestStoreInfo? nearestStore,
   }) async {
     try {
@@ -56,8 +55,8 @@ class WidgetService {
       await HomeWidget.saveWidgetData<int>('widget_current_index', 0);
 
       if (matchedCards.isEmpty) {
-        // 無符合 → 優先顯示最近門市的卡片，否則顯示最近使用
-        await _updateWithNoMatch(recentCard, nearestStore, allCards);
+        // 無符合 → 距離 <= 1000m 時顯示最近門市卡片，否則顯示空狀態
+        await _updateWithNoMatch(nearestStore, allCards);
       } else if (matchedCards.length == 1) {
         // 1 張符合 → 直接顯示條碼
         await _updateWithSingleCard(matchedCards.first);
@@ -71,9 +70,8 @@ class WidgetService {
     } catch (_) {}
   }
 
-  /// 無符合時：優先顯示最近門市對應的卡片，否則顯示最近使用
+  /// 無符合時：距離 <= 1000m 顯示最近門市對應的卡片，否則顯示空狀態
   Future<void> _updateWithNoMatch(
-    MemberCard? recentCard,
     NearestStoreInfo? nearestStore,
     List<MemberCard> allCards,
   ) async {
@@ -82,36 +80,35 @@ class WidgetService {
       WidgetDisplayMode.noMatch.name,
     );
 
-    // 優先：找最近門市品牌對應的卡片
+    // 找最近門市品牌對應的卡片（距離 <= 1000m）
     MemberCard? nearestCard;
-    if (nearestStore != null) {
+    if (nearestStore != null &&
+        nearestStore.distanceMeters <= kNearestStoreMaxDistanceMeters) {
       final brandLower = nearestStore.brandName.toLowerCase();
-      nearestCard = allCards.cast<MemberCard?>().firstWhere(
-        (card) => card!.storeName.toLowerCase().contains(brandLower) ||
-                   brandLower.contains(card.storeName.toLowerCase()),
-        orElse: () => null,
-      );
+      for (final card in allCards) {
+        final storeLower = card.storeName.toLowerCase();
+        if (storeLower.contains(brandLower) || brandLower.contains(storeLower)) {
+          nearestCard = card;
+          break;
+        }
+      }
     }
 
-    final displayCard = nearestCard ?? recentCard;
-
-    if (displayCard != null) {
-      await _saveCardData('primary', displayCard);
-      if (nearestCard != null && nearestStore != null) {
-        // 顯示最近門市距離
-        await HomeWidget.saveWidgetData<String>(
-          'widget_title',
-          '${nearestStore.brandName}（${nearestStore.distanceText}）',
-        );
-      } else {
-        await HomeWidget.saveWidgetData<String>(
-          'widget_title',
-          '最近使用',
-        );
-      }
-    } else {
+    if (nearestCard != null && nearestStore != null) {
+      await _saveCardData('primary', nearestCard);
+      await HomeWidget.saveWidgetData<String>(
+        'widget_title',
+        '最近門市・${nearestStore.distanceText}',
+      );
+    } else if (allCards.isEmpty) {
       // 完全沒有卡片時顯示引導文字
       await HomeWidget.saveWidgetData<String>('widget_title', '點擊新增會員卡');
+      await HomeWidget.saveWidgetData<String>('primary_store_name', '');
+      await HomeWidget.saveWidgetData<String>('primary_barcode_value', '');
+      await HomeWidget.saveWidgetData<String>('primary_card_id', '');
+    } else {
+      // 有卡片但距離太遠或無對應品牌
+      await HomeWidget.saveWidgetData<String>('widget_title', '附近無符合店家');
       await HomeWidget.saveWidgetData<String>('primary_store_name', '');
       await HomeWidget.saveWidgetData<String>('primary_barcode_value', '');
       await HomeWidget.saveWidgetData<String>('primary_card_id', '');

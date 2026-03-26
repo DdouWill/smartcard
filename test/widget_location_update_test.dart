@@ -114,14 +114,14 @@ void main() {
 
       await controller.runLocationDetection();
 
-      // 測試環境 WiFi/GPS 不可用 → noMatch → 顯示最近使用卡片
+      // 測試環境 WiFi/GPS 不可用 → noMatch → 顯示最近門市或空狀態
       expect(savedWidgetData['widget_mode'], isNotNull);
     });
 
-    test('無匹配時 → Widget 顯示最近使用卡片', () async {
+    test('無匹配時 → Widget 顯示最近門市或空狀態', () async {
       await controller.addCard(makeCardA());
 
-      // 測試環境 WiFi/GPS 都不可用 → 無匹配 → 顯示最近使用
+      // 測試環境 WiFi/GPS 都不可用 → 無匹配 → 顯示最近門市或空狀態
       await controller.runLocationDetection();
 
       expect(savedWidgetData['widget_mode'], 'noMatch');

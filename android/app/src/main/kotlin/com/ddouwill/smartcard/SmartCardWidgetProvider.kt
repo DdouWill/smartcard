@@ -208,7 +208,7 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
     // 顯示模式
     // ──────────────────────────────────────────
 
-    /** 無匹配：顯示最近使用的卡片或空狀態 */
+    /** 無匹配：顯示最近門市或空狀態 */
     private fun updateNoMatchMode(
         context: Context,
         views: RemoteViews,

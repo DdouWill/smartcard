@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smartcard/models/member_card.dart';
 import 'package:smartcard/services/location_service.dart';
+import 'package:smartcard/services/store_location_service.dart';
 import 'package:smartcard/widgets/location_status_card.dart';
 
 void main() {
@@ -164,7 +165,7 @@ void main() {
   });
 
   group('W9: LocationStatusCard 無匹配', () {
-    testWidgets('空列表且無 recentCard → 顯示附近無符合店家', (tester) async {
+    testWidgets('空列表且無最近門市 → 顯示附近無符合店家', (tester) async {
       final result = const LocationResult(
         matchedCards: [],
         trigger: LocationTrigger.none,
@@ -182,7 +183,7 @@ void main() {
       expect(find.byIcon(Icons.location_off), findsOneWidget);
     });
 
-    testWidgets('WiFi 觸發但無匹配且無 recentCard → 顯示附近無符合店家', (tester) async {
+    testWidgets('WiFi 觸發但無匹配且無最近門市 → 顯示附近無符合店家', (tester) async {
       final result = const LocationResult(
         matchedCards: [],
         trigger: LocationTrigger.wifi,
@@ -200,67 +201,158 @@ void main() {
     });
   });
 
-  group('W10: LocationStatusCard 最近卡片', () {
-    testWidgets('無匹配 + 有 recentCard → 顯示半透明最近使用卡片', (tester) async {
-      final recent = createCard(id: 'recent-1', storeName: '最近店家');
-      final result = const LocationResult(
-        matchedCards: [],
+  group('W10: LocationStatusCard 最近門市', () {
+    testWidgets('無匹配 + 最近門市 <= 1000m + 有對應卡片 → 顯示半透明最近門市卡片', (tester) async {
+      final card = createCard(id: 'nearest-1', storeName: '7-ELEVEN');
+      final result = LocationResult(
+        matchedCards: const [],
         trigger: LocationTrigger.none,
+        nearestStore: NearestStoreInfo(
+          brandName: '7-ELEVEN',
+          distanceMeters: 350,
+          zone: GpsZone(latitude: 25.0, longitude: 121.0),
+        ),
       );
 
       await tester.pumpWidget(wrap(
         LocationStatusCard(
           locationResult: result,
           isDetecting: false,
-          recentCard: recent,
+          allCards: [card],
           onCardTap: (_) {},
         ),
       ));
 
-      expect(find.text('最近使用'), findsOneWidget);
-      expect(find.text('最近店家'), findsOneWidget);
-      // Check Opacity widget exists (semi-transparent style)
+      expect(find.text('最近門市・350m'), findsOneWidget);
+      expect(find.text('7-ELEVEN'), findsOneWidget);
       expect(find.byType(Opacity), findsOneWidget);
+      expect(find.byIcon(Icons.near_me), findsOneWidget);
     });
 
-    testWidgets('點擊最近卡片觸發 onCardTap', (tester) async {
+    testWidgets('點擊最近門市卡片觸發 onCardTap', (tester) async {
       MemberCard? tappedCard;
-      final recent = createCard(id: 'recent-tap', storeName: '最近使用店家');
-      final result = const LocationResult(
-        matchedCards: [],
+      final card = createCard(id: 'nearest-tap', storeName: '全聯');
+      final result = LocationResult(
+        matchedCards: const [],
         trigger: LocationTrigger.none,
+        nearestStore: NearestStoreInfo(
+          brandName: '全聯',
+          distanceMeters: 500,
+          zone: GpsZone(latitude: 25.0, longitude: 121.0),
+        ),
       );
 
       await tester.pumpWidget(wrap(
         LocationStatusCard(
           locationResult: result,
           isDetecting: false,
-          recentCard: recent,
+          allCards: [card],
           onCardTap: (c) => tappedCard = c,
         ),
       ));
 
-      await tester.tap(find.text('最近使用店家'));
-      expect(tappedCard?.id, 'recent-tap');
+      await tester.tap(find.text('全聯'));
+      expect(tappedCard?.id, 'nearest-tap');
     });
 
-    testWidgets('最近卡片顯示 history 圖示', (tester) async {
-      final recent = createCard(id: 'recent-icon', storeName: 'RecentStore');
-      final result = const LocationResult(
-        matchedCards: [],
+    testWidgets('最近門市 > 1000m → 顯示附近無符合店家', (tester) async {
+      final card = createCard(id: 'far-1', storeName: '7-ELEVEN');
+      final result = LocationResult(
+        matchedCards: const [],
         trigger: LocationTrigger.none,
+        nearestStore: NearestStoreInfo(
+          brandName: '7-ELEVEN',
+          distanceMeters: 1500,
+          zone: GpsZone(latitude: 25.0, longitude: 121.0),
+        ),
       );
 
       await tester.pumpWidget(wrap(
         LocationStatusCard(
           locationResult: result,
           isDetecting: false,
-          recentCard: recent,
+          allCards: [card],
           onCardTap: (_) {},
         ),
       ));
 
-      expect(find.byIcon(Icons.history), findsOneWidget);
+      expect(find.text('附近無符合店家'), findsOneWidget);
+      expect(find.byIcon(Icons.location_off), findsOneWidget);
+    });
+
+    testWidgets('最近門市 = 1000m（邊界值）→ 顯示半透明最近門市卡片', (tester) async {
+      final card = createCard(id: 'boundary-1', storeName: '7-ELEVEN');
+      final result = LocationResult(
+        matchedCards: const [],
+        trigger: LocationTrigger.none,
+        nearestStore: NearestStoreInfo(
+          brandName: '7-ELEVEN',
+          distanceMeters: 1000,
+          zone: GpsZone(latitude: 25.0, longitude: 121.0),
+        ),
+      );
+
+      await tester.pumpWidget(wrap(
+        LocationStatusCard(
+          locationResult: result,
+          isDetecting: false,
+          allCards: [card],
+          onCardTap: (_) {},
+        ),
+      ));
+
+      expect(find.text('最近門市・1.0km'), findsOneWidget);
+      expect(find.text('7-ELEVEN'), findsOneWidget);
+      expect(find.byType(Opacity), findsOneWidget);
+    });
+
+    testWidgets('最近門市 = 1001m（邊界值）→ 顯示附近無符合店家', (tester) async {
+      final card = createCard(id: 'boundary-2', storeName: '7-ELEVEN');
+      final result = LocationResult(
+        matchedCards: const [],
+        trigger: LocationTrigger.none,
+        nearestStore: NearestStoreInfo(
+          brandName: '7-ELEVEN',
+          distanceMeters: 1001,
+          zone: GpsZone(latitude: 25.0, longitude: 121.0),
+        ),
+      );
+
+      await tester.pumpWidget(wrap(
+        LocationStatusCard(
+          locationResult: result,
+          isDetecting: false,
+          allCards: [card],
+          onCardTap: (_) {},
+        ),
+      ));
+
+      expect(find.text('附近無符合店家'), findsOneWidget);
+      expect(find.byIcon(Icons.location_off), findsOneWidget);
+    });
+
+    testWidgets('最近門市 <= 1000m 但無對應品牌卡片 → 顯示附近無符合店家', (tester) async {
+      final card = createCard(id: 'unrelated', storeName: '家樂福');
+      final result = LocationResult(
+        matchedCards: const [],
+        trigger: LocationTrigger.none,
+        nearestStore: NearestStoreInfo(
+          brandName: '7-ELEVEN',
+          distanceMeters: 300,
+          zone: GpsZone(latitude: 25.0, longitude: 121.0),
+        ),
+      );
+
+      await tester.pumpWidget(wrap(
+        LocationStatusCard(
+          locationResult: result,
+          isDetecting: false,
+          allCards: [card],
+          onCardTap: (_) {},
+        ),
+      ));
+
+      expect(find.text('附近無符合店家'), findsOneWidget);
     });
   });
 }

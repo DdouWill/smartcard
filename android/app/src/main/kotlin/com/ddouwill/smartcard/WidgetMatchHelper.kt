@@ -20,6 +20,9 @@ object WidgetMatchHelper {
     // 門市匹配半徑（公尺）
     private const val MATCH_RADIUS = 500f
 
+    // noMatch 時顯示最近門市卡片的最大距離（公尺）
+    private const val NEAREST_STORE_MAX_DISTANCE = 1000f
+
     // native_card_list key（Flutter 端寫入）
     private const val KEY_CARD_LIST = "native_card_list"
 
@@ -67,13 +70,26 @@ object WidgetMatchHelper {
             matchedCards.isEmpty() -> {
                 editor.putString("widget_mode", "noMatch")
 
-                if (cards.isNotEmpty()) {
-                    // 顯示最近使用的卡片（第一張）
-                    val recentCard = cards.first()
-                    saveCardToPrefs(editor, "primary", recentCard)
-                    editor.putString("widget_title", "最近使用")
-                } else {
+                // 找最近門市品牌對應的卡片（距離 <= 1000m）
+                var nearestCard: JSONObject? = null
+                if (nearestBrand != null && nearestBrand.distance <= NEAREST_STORE_MAX_DISTANCE) {
+                    nearestCard = cards.firstOrNull { card ->
+                        val storeName = card.optString("storeName", "")
+                        storeName.contains(nearestBrand.brand, ignoreCase = true) ||
+                            nearestBrand.brand.contains(storeName, ignoreCase = true)
+                    }
+                }
+
+                if (nearestCard != null && nearestBrand != null) {
+                    saveCardToPrefs(editor, "primary", nearestCard)
+                    editor.putString("widget_title", "最近門市・${nearestBrand.distanceText}")
+                } else if (cards.isEmpty()) {
                     editor.putString("widget_title", "點擊新增會員卡")
+                    editor.putString("primary_store_name", "")
+                    editor.putString("primary_barcode_value", "")
+                    editor.putString("primary_card_id", "")
+                } else {
+                    editor.putString("widget_title", "附近無符合店家")
                     editor.putString("primary_store_name", "")
                     editor.putString("primary_barcode_value", "")
                     editor.putString("primary_card_id", "")
@@ -308,14 +324,14 @@ object WidgetMatchHelper {
     }
 
     data class NearestBrandInfo(val brand: String, val distance: Float) {
-        val displayText: String
-            get() {
-                val distStr = if (distance < 1000) {
-                    "${distance.toInt()}m"
-                } else {
-                    String.format("%.1fkm", distance / 1000)
-                }
-                return "$brand（$distStr）"
+        val distanceText: String
+            get() = if (distance < 1000) {
+                "${distance.toInt()}m"
+            } else {
+                String.format("%.1fkm", distance / 1000)
             }
+
+        val displayText: String
+            get() = "$brand（$distanceText）"
     }
 }

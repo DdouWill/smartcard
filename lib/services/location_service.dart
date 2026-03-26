@@ -36,7 +36,7 @@ class LocationResult {
 enum LocationTrigger {
   wifi, // 由 WiFi SSID 匹配觸發
   gps, // 由 GPS 地理圍欄匹配觸發
-  none, // 無符合（顯示最近使用）
+  none, // 無符合（顯示最近門市或空狀態）
 }
 
 /// 定位服務（Singleton）

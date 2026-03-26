@@ -54,30 +54,51 @@ void main() {
   // U14: WidgetService noMatch mode
   // ──────────────────────────────────────────
   group('U14: noMatch mode', () {
-    test('0 匹配 + 有最近卡片 → 寫入 noMatch + primary_* keys', () async {
-      final recentCard = createCard(
-        id: 'recent-1',
-        storeName: '最近店家',
-        barcodeValue: 'RECENT-CODE',
+    test('0 匹配 + 最近門市 <= 1000m + 有對應卡片 → 寫入最近門市標題', () async {
+      final card = createCard(
+        id: 'seven-1',
+        storeName: '7-ELEVEN',
+        barcodeValue: 'SEVEN-CODE',
         cardColor: '#FF0000',
       );
 
       await widgetService.updateWidget(
         matchedCards: [],
-        recentCard: recentCard,
+        allCards: [card],
+        nearestStore: NearestStoreInfo(
+          brandName: '7-ELEVEN',
+          distanceMeters: 350,
+          zone: GpsZone(latitude: 25.0, longitude: 121.0),
+        ),
       );
 
       expect(savedData['widget_mode'], 'noMatch');
-      expect(savedData['widget_title'], '最近使用');
-      expect(savedData['primary_store_name'], '最近店家');
-      expect(savedData['primary_barcode_value'], 'RECENT-CODE');
-      expect(savedData['primary_card_id'], 'recent-1');
+      expect(savedData['widget_title'], '最近門市・350m');
+      expect(savedData['primary_store_name'], '7-ELEVEN');
+      expect(savedData['primary_barcode_value'], 'SEVEN-CODE');
+      expect(savedData['primary_card_id'], 'seven-1');
     });
 
-    test('0 匹配 + 無最近卡片 → 顯示引導文字', () async {
+    test('0 匹配 + 最近門市 > 1000m → 顯示附近無符合店家', () async {
+      final card = createCard(id: 'far-1', storeName: '7-ELEVEN', barcodeValue: 'X');
       await widgetService.updateWidget(
         matchedCards: [],
-        recentCard: null,
+        allCards: [card],
+        nearestStore: NearestStoreInfo(
+          brandName: '7-ELEVEN',
+          distanceMeters: 1500,
+          zone: GpsZone(latitude: 25.0, longitude: 121.0),
+        ),
+      );
+
+      expect(savedData['widget_mode'], 'noMatch');
+      expect(savedData['widget_title'], '附近無符合店家');
+      expect(savedData['primary_store_name'], '');
+    });
+
+    test('0 匹配 + 無卡片 → 顯示引導文字', () async {
+      await widgetService.updateWidget(
+        matchedCards: [],
       );
 
       expect(savedData['widget_mode'], 'noMatch');
@@ -87,10 +108,10 @@ void main() {
     });
 
     test('0 匹配 + nearestStore 非 null → 寫入 nearest_store_text', () async {
-      final recentCard = createCard(id: 'r1', storeName: '測試', barcodeValue: 'X');
+      final card = createCard(id: 'r1', storeName: '7-ELEVEN', barcodeValue: 'X');
       await widgetService.updateWidget(
         matchedCards: [],
-        recentCard: recentCard,
+        allCards: [card],
         nearestStore: NearestStoreInfo(
           brandName: '7-ELEVEN',
           distanceMeters: 200,
@@ -101,8 +122,69 @@ void main() {
     });
 
     test('nearestStore 為 null → nearest_store_text 為空字串', () async {
-      await widgetService.updateWidget(matchedCards: [], recentCard: null, nearestStore: null);
+      await widgetService.updateWidget(matchedCards: [], nearestStore: null);
       expect(savedData['nearest_store_text'], '');
+    });
+
+    test('0 匹配 + 最近門市 = 1000m（邊界值）→ 顯示最近門市卡片', () async {
+      final card = createCard(
+        id: 'boundary-1',
+        storeName: '7-ELEVEN',
+        barcodeValue: 'BOUNDARY-CODE',
+      );
+
+      await widgetService.updateWidget(
+        matchedCards: [],
+        allCards: [card],
+        nearestStore: NearestStoreInfo(
+          brandName: '7-ELEVEN',
+          distanceMeters: 1000,
+          zone: GpsZone(latitude: 25.0, longitude: 121.0),
+        ),
+      );
+
+      expect(savedData['widget_mode'], 'noMatch');
+      expect(savedData['widget_title'], '最近門市・1.0km');
+      expect(savedData['primary_store_name'], '7-ELEVEN');
+    });
+
+    test('0 匹配 + 最近門市 = 1001m（邊界值）→ 顯示附近無符合店家', () async {
+      final card = createCard(
+        id: 'boundary-2',
+        storeName: '7-ELEVEN',
+        barcodeValue: 'BOUNDARY-CODE',
+      );
+
+      await widgetService.updateWidget(
+        matchedCards: [],
+        allCards: [card],
+        nearestStore: NearestStoreInfo(
+          brandName: '7-ELEVEN',
+          distanceMeters: 1001,
+          zone: GpsZone(latitude: 25.0, longitude: 121.0),
+        ),
+      );
+
+      expect(savedData['widget_mode'], 'noMatch');
+      expect(savedData['widget_title'], '附近無符合店家');
+      expect(savedData['primary_store_name'], '');
+    });
+
+    test('0 匹配 + 有卡片但無對應品牌 → 顯示附近無符合店家', () async {
+      final card = createCard(id: 'unrelated', storeName: '家樂福', barcodeValue: 'X');
+      await widgetService.updateWidget(
+        matchedCards: [],
+        allCards: [card],
+        nearestStore: NearestStoreInfo(
+          brandName: '7-ELEVEN',
+          distanceMeters: 300,
+          zone: GpsZone(latitude: 25.0, longitude: 121.0),
+        ),
+      );
+
+      expect(savedData['widget_mode'], 'noMatch');
+      expect(savedData['widget_title'], '附近無符合店家');
+      expect(savedData['primary_store_name'], '');
     });
   });
 
@@ -220,8 +302,8 @@ void main() {
       expect(savedData['primary_barcode_value'], '');
     });
 
-    test('null recentCard + 空匹配 → noMatch 引導文字不 crash', () async {
-      await widgetService.updateWidget(matchedCards: [], recentCard: null);
+    test('空匹配 + 無卡片 → noMatch 引導文字不 crash', () async {
+      await widgetService.updateWidget(matchedCards: []);
 
       expect(savedData['widget_mode'], 'noMatch');
       expect(savedData['widget_title'], '點擊新增會員卡');
