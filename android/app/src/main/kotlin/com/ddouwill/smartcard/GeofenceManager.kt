@@ -59,9 +59,9 @@ class GeofenceManager {
                 "ACCESS_FINE_LOCATION: ${hasPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION)}, " +
                 "ACCESS_BACKGROUND_LOCATION: ${hasPermission(context, android.Manifest.permission.ACCESS_BACKGROUND_LOCATION)}")
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 if (!hasPermission(context, android.Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
-                    Log.w(TAG, "Android 12+ 需要 ACCESS_BACKGROUND_LOCATION 權限才能正常觸發 geofence，" +
+                    Log.w(TAG, "Android 10+ 需要 ACCESS_BACKGROUND_LOCATION 權限才能正常觸發 geofence，" +
                         "目前缺少此權限，geofence 可能無法在背景觸發")
                 }
             }

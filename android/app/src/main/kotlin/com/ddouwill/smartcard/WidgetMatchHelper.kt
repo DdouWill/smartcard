@@ -84,6 +84,7 @@ object WidgetMatchHelper {
         when {
             sortedMatchedCards.isEmpty() -> {
                 editor.putString("widget_mode", "noMatch")
+                editor.putInt("card_count", 0)
 
                 // 找最近門市品牌對應的卡片（距離 <= 1000m）
                 var nearestCard: JSONObject? = null
@@ -120,6 +121,7 @@ object WidgetMatchHelper {
 
             sortedMatchedCards.size == 1 -> {
                 editor.putString("widget_mode", "singleCard")
+                editor.putInt("card_count", 1)
                 val card = sortedMatchedCards.first()
                 editor.putString("widget_title", card.optString("storeName", ""))
                 saveCardToPrefs(editor, "primary", card)
