@@ -7,37 +7,49 @@
     android:padding="8dp"
     android:clickable="true">
 
-    <!-- 左欄：icon + 條碼 + 店名 -->
+    <!-- 左欄：icon + 店名（上）、條碼（下） -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
         android:orientation="vertical">
 
-        <ImageView
-            android:id="@+id/widget_item_icon"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:src="@mipmap/ic_launcher"
-            android:contentDescription="App icon" />
+        <!-- 第一行：icon + 店名 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
+            <ImageView
+                android:id="@+id/widget_item_icon"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:src="@mipmap/ic_launcher"
+                android:layout_marginEnd="6dp"
+                android:contentDescription="App icon" />
+
+            <TextView
+                android:id="@+id/widget_item_store_name"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="13sp"
+                android:textColor="#333333"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <!-- 第二行：條碼（佔滿剩餘空間） -->
         <ImageView
             android:id="@+id/widget_item_barcode"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
             android:scaleType="fitCenter"
+            android:layout_marginTop="4dp"
             android:contentDescription="Barcode" />
-
-        <TextView
-            android:id="@+id/widget_item_store_name"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_horizontal"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:maxLines="1"
-            android:ellipsize="end" />
     </LinearLayout>
 
     <!-- 右欄：▲ 頁碼 ▼ -->
