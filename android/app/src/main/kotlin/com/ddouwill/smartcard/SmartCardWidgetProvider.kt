@@ -290,8 +290,8 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
         // 箭頭顏色（初始：第一張，▲ 亮可往上滑看下一張，▼ 暗）
         val enabledColor = android.graphics.Color.parseColor("#1565C0")
         val disabledColor = android.graphics.Color.parseColor("#CCCCCC")
-        views.setTextColor(R.id.widget_arrow_up, if (cardCount > 1) enabledColor else disabledColor)
-        views.setTextColor(R.id.widget_arrow_down, disabledColor)
+        views.setTextColor(R.id.widget_arrow_up, enabledColor)
+        views.setTextColor(R.id.widget_arrow_down, enabledColor)
 
         // 綁定 StackView 到 SmartCardWidgetService
         val serviceIntent = Intent(context, SmartCardWidgetService::class.java).apply {
