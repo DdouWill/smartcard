@@ -4,9 +4,9 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@drawable/widget_card_bg"
-    android:paddingHorizontal="6dp"
-    android:paddingTop="4dp"
-    android:paddingBottom="4dp"
+    android:paddingHorizontal="8dp"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp"
     android:clickable="true">
 
     <!-- icon + 店名 -->
