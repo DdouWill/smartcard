@@ -35,6 +35,8 @@ class GeofenceManager {
         private const val GEOFENCE_EXPIRATION = Geofence.NEVER_EXPIRE
         private const val REQUEST_CODE_GEOFENCE = 8002
         private const val KEY_CARD_LIST = "native_card_list"
+        private const val BOUNDING_BOX_LAT_DELTA = 0.045  // ±0.045° ≈ 5km
+        private const val BOUNDING_BOX_LNG_DELTA = 0.055  // ±0.055° ≈ 5km
 
         /**
          * 註冊最近 80 間門市的 geofence
@@ -214,6 +216,13 @@ class GeofenceManager {
         ): FilterResult {
             val stores = mutableListOf<StoreInfo>()
             var totalCandidates = 0
+            var totalLocations = 0
+
+            // bounding box 粗篩邊界
+            val minLat = latitude - BOUNDING_BOX_LAT_DELTA
+            val maxLat = latitude + BOUNDING_BOX_LAT_DELTA
+            val minLng = longitude - BOUNDING_BOX_LNG_DELTA
+            val maxLng = longitude + BOUNDING_BOX_LNG_DELTA
 
             try {
                 val jsonStr = context.assets
@@ -235,6 +244,11 @@ class GeofenceManager {
                         val lat = loc.optDouble("lat", Double.NaN)
                         val lng = loc.optDouble("lng", Double.NaN)
                         if (lat.isNaN() || lng.isNaN()) continue
+
+                        totalLocations++
+
+                        // bounding box 粗篩：跳過明顯超出範圍的門市
+                        if (lat !in minLat..maxLat || lng !in minLng..maxLng) continue
 
                         val distance = calculateDistance(latitude, longitude, lat, lng)
 
@@ -268,6 +282,8 @@ class GeofenceManager {
             }
 
             val filteredCandidates = stores.size
+
+            Log.d(TAG, "粗篩: 全量門市=$totalLocations, bounding box 後=$totalCandidates, 品牌過濾後=$filteredCandidates")
 
             // 按距離排序，取最近 80 間
             return FilterResult(

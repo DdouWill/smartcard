@@ -27,6 +27,14 @@ object WidgetMatchHelper {
     // native_card_list key（Flutter 端寫入）
     private const val KEY_CARD_LIST = "native_card_list"
 
+    // ── 位置快取粗篩 ──
+    private var cachedNearbyStores: JSONObject? = null  // 粗篩後的子集
+    private var cacheLat: Double = Double.NaN
+    private var cacheLng: Double = Double.NaN
+    private const val CACHE_INVALIDATION_DISTANCE = 1000f  // 1km
+    private const val BOUNDING_BOX_LAT_DELTA = 0.045  // ±0.045° ≈ 5km
+    private const val BOUNDING_BOX_LNG_DELTA = 0.055  // ±0.055° ≈ 5km
+
     /**
      * 根據目前位置匹配使用者卡片並更新 widget
      *
@@ -39,8 +47,8 @@ object WidgetMatchHelper {
     fun matchAndUpdateWidget(context: Context, latitude: Double, longitude: Double) {
         Log.d(TAG, "開始匹配 (lat=$latitude, lng=$longitude)")
 
-        // 讀取 store_locations.json（只讀一次，傳入各 helper）
-        val storesObj = loadStoreLocations(context) ?: return
+        // 粗篩：bounding box 5km 子集快取
+        val storesObj = getFilteredStores(context, latitude, longitude) ?: return
 
         // 1. 找附近 200m 內的門市品牌
         val nearbyBrands = findNearbyBrands(storesObj, latitude, longitude)
@@ -161,6 +169,84 @@ object WidgetMatchHelper {
             Log.e(TAG, "讀取 store_locations.json 失敗: $e")
             null
         }
+    }
+
+    // ──────────────────────────────────────────
+    // 位置快取粗篩
+    // ──────────────────────────────────────────
+
+    /**
+     * 取得 bounding box 粗篩後的門市子集（帶快取）
+     *
+     * - 快取存在且位置變化 < 1km → 回傳快取（HIT）
+     * - 否則從完整 store_locations.json 粗篩 bounding box 內門市（MISS）
+     */
+    private fun getFilteredStores(
+        context: Context,
+        latitude: Double,
+        longitude: Double
+    ): JSONObject? {
+        // 檢查快取是否有效
+        val cached = cachedNearbyStores
+        if (cached != null && !cacheLat.isNaN() && !cacheLng.isNaN()) {
+            val distance = calculateDistance(cacheLat, cacheLng, latitude, longitude)
+            if (distance < CACHE_INVALIDATION_DISTANCE) {
+                Log.d(TAG, "粗篩快取 HIT (距上次 ${distance.toInt()}m, 快取門市品牌數=${cached.length()})")
+                return cached
+            }
+        }
+
+        // 快取 MISS：重新從完整資料粗篩
+        val allStores = loadStoreLocations(context) ?: return null
+
+        val minLat = latitude - BOUNDING_BOX_LAT_DELTA
+        val maxLat = latitude + BOUNDING_BOX_LAT_DELTA
+        val minLng = longitude - BOUNDING_BOX_LNG_DELTA
+        val maxLng = longitude + BOUNDING_BOX_LNG_DELTA
+
+        val filtered = JSONObject()
+        var totalLocations = 0
+        var filteredLocations = 0
+        val brandKeys = allStores.keys()
+
+        while (brandKeys.hasNext()) {
+            val brand = brandKeys.next()
+            try {
+                val brandObj = allStores.getJSONObject(brand)
+                val locations = brandObj.getJSONArray("locations")
+                val filteredLocs = JSONArray()
+
+                for (i in 0 until locations.length()) {
+                    val loc = locations.getJSONObject(i)
+                    val lat = loc.optDouble("lat", Double.NaN)
+                    val lng = loc.optDouble("lng", Double.NaN)
+                    totalLocations++
+                    if (lat.isNaN() || lng.isNaN()) continue
+
+                    if (lat in minLat..maxLat && lng in minLng..maxLng) {
+                        filteredLocs.put(loc)
+                        filteredLocations++
+                    }
+                }
+
+                if (filteredLocs.length() > 0) {
+                    val filteredBrandObj = JSONObject()
+                    filteredBrandObj.put("locations", filteredLocs)
+                    filtered.put(brand, filteredBrandObj)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "粗篩跳過格式異常的品牌 $brand: $e")
+            }
+        }
+
+        Log.d(TAG, "粗篩快取 MISS — 全量門市=$totalLocations, 粗篩後=$filteredLocations, 品牌數=${filtered.length()}")
+
+        // 存入快取
+        cachedNearbyStores = filtered
+        cacheLat = latitude
+        cacheLng = longitude
+
+        return filtered
     }
 
     // ──────────────────────────────────────────
