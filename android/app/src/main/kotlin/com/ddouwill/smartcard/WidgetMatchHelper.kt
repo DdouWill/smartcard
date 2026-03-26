@@ -84,7 +84,7 @@ object WidgetMatchHelper {
         when {
             sortedMatchedCards.isEmpty() -> {
                 editor.putString("widget_mode", "noMatch")
-                editor.putInt("card_count", 0)
+                editor.putInt("card_count", cards.size)
 
                 // 找最近門市品牌對應的卡片（距離 <= 1000m）
                 var nearestCard: JSONObject? = null
