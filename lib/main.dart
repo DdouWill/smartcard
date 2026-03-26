@@ -1,5 +1,6 @@
 // SmartCard App 入口
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -21,6 +22,9 @@ Future<void> main() async {
 
   // 0. 初始化 Firebase
   await Firebase.initializeApp();
+
+  // Debug mode 不送 crash report
+  await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(!kDebugMode);
 
   // 1. Crashlytics 錯誤追蹤
   FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
