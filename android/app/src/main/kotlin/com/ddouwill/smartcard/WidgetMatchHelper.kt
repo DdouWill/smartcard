@@ -56,16 +56,10 @@ object WidgetMatchHelper {
             nearbyBrands.any { brand ->
                 storeName.contains(brand, ignoreCase = true)
             }
-        }.let { matched ->
+        }.also { matched ->
             Log.d(TAG, "匹配卡片數: ${matched.size}")
-            if (matched.size > 1) {
-                matched.sortedBy { card ->
-                    val storeName = card.optString("storeName", "")
-                    findMinDistanceForBrand(storesObj, latitude, longitude, storeName)
-                }
-            } else {
-                matched
-            }
+        }.sortedBy { card ->
+            findMinDistanceForBrand(storesObj, latitude, longitude, card.optString("storeName", ""))
         }
 
         // 找最近品牌（用於 analytics 和 nearest_store_text）
@@ -149,6 +143,7 @@ object WidgetMatchHelper {
 
         // Firebase Analytics
         logMatchResult(context, sortedMatchedCards, nearestBrand)
+        logMatchDebug(context, latitude, longitude, nearbyBrands, sortedMatchedCards)
     }
 
     // ──────────────────────────────────────────
@@ -185,20 +180,25 @@ object WidgetMatchHelper {
 
         while (brandKeys.hasNext()) {
             val brand = brandKeys.next()
-            val brandObj = storesObj.getJSONObject(brand)
-            val locations = brandObj.getJSONArray("locations")
+            try {
+                val brandObj = storesObj.getJSONObject(brand)
+                val locations = brandObj.getJSONArray("locations")
 
-            for (i in 0 until locations.length()) {
-                val loc = locations.getJSONObject(i)
-                val lat = loc.optDouble("lat", Double.NaN)
-                val lng = loc.optDouble("lng", Double.NaN)
-                if (lat.isNaN() || lng.isNaN()) continue
+                for (i in 0 until locations.length()) {
+                    val loc = locations.getJSONObject(i)
+                    val lat = loc.optDouble("lat", Double.NaN)
+                    val lng = loc.optDouble("lng", Double.NaN)
+                    if (lat.isNaN() || lng.isNaN()) continue
 
-                val distance = calculateDistance(latitude, longitude, lat, lng)
-                if (distance <= MATCH_RADIUS) {
-                    brands.add(brand)
-                    break // 此品牌已有門市在範圍內，不需繼續檢查
+                    val distance = calculateDistance(latitude, longitude, lat, lng)
+                    if (distance <= MATCH_RADIUS) {
+                        brands.add(brand)
+                        break // 此品牌已有門市在範圍內，不需繼續檢查
+                    }
                 }
+            } catch (e: Exception) {
+                Log.w(TAG, "跳過格式異常的品牌 $brand: $e")
+                continue
             }
         }
 
@@ -224,20 +224,25 @@ object WidgetMatchHelper {
             if (cardBrands != null && !cardBrands.any { cb ->
                 brand.contains(cb, ignoreCase = true) || cb.contains(brand, ignoreCase = true)
             }) continue
-            val brandObj = storesObj.getJSONObject(brand)
-            val locations = brandObj.getJSONArray("locations")
+            try {
+                val brandObj = storesObj.getJSONObject(brand)
+                val locations = brandObj.getJSONArray("locations")
 
-            for (i in 0 until locations.length()) {
-                val loc = locations.getJSONObject(i)
-                val lat = loc.optDouble("lat", Double.NaN)
-                val lng = loc.optDouble("lng", Double.NaN)
-                if (lat.isNaN() || lng.isNaN()) continue
+                for (i in 0 until locations.length()) {
+                    val loc = locations.getJSONObject(i)
+                    val lat = loc.optDouble("lat", Double.NaN)
+                    val lng = loc.optDouble("lng", Double.NaN)
+                    if (lat.isNaN() || lng.isNaN()) continue
 
-                val distance = calculateDistance(latitude, longitude, lat, lng)
-                if (distance < nearestDistance) {
-                    nearestDistance = distance
-                    nearestBrand = brand
+                    val distance = calculateDistance(latitude, longitude, lat, lng)
+                    if (distance < nearestDistance) {
+                        nearestDistance = distance
+                        nearestBrand = brand
+                    }
                 }
+            } catch (e: Exception) {
+                Log.w(TAG, "跳過格式異常的品牌 $brand: $e")
+                continue
             }
         }
 
@@ -314,19 +319,24 @@ object WidgetMatchHelper {
             val brand = brandKeys.next()
             if (!storeName.contains(brand, ignoreCase = true)) continue
 
-            val brandObj = storesObj.getJSONObject(brand)
-            val locations = brandObj.getJSONArray("locations")
+            try {
+                val brandObj = storesObj.getJSONObject(brand)
+                val locations = brandObj.getJSONArray("locations")
 
-            for (i in 0 until locations.length()) {
-                val loc = locations.getJSONObject(i)
-                val lat = loc.optDouble("lat", Double.NaN)
-                val lng = loc.optDouble("lng", Double.NaN)
-                if (lat.isNaN() || lng.isNaN()) continue
+                for (i in 0 until locations.length()) {
+                    val loc = locations.getJSONObject(i)
+                    val lat = loc.optDouble("lat", Double.NaN)
+                    val lng = loc.optDouble("lng", Double.NaN)
+                    if (lat.isNaN() || lng.isNaN()) continue
 
-                val distance = calculateDistance(latitude, longitude, lat, lng)
-                if (distance < minDistance) {
-                    minDistance = distance
+                    val distance = calculateDistance(latitude, longitude, lat, lng)
+                    if (distance < minDistance) {
+                        minDistance = distance
+                    }
                 }
+            } catch (e: Exception) {
+                Log.w(TAG, "跳過格式異常的品牌 $brand: $e")
+                continue
             }
         }
 
@@ -362,6 +372,30 @@ object WidgetMatchHelper {
             analytics.logEvent("widget_match_result", params)
         } catch (e: Exception) {
             Log.e(TAG, "Firebase Analytics 記錄失敗: $e")
+        }
+    }
+
+    private fun logMatchDebug(
+        context: Context,
+        latitude: Double,
+        longitude: Double,
+        nearbyBrands: Set<String>,
+        matchedCards: List<JSONObject>
+    ) {
+        try {
+            val analytics = com.google.firebase.analytics.FirebaseAnalytics.getInstance(context)
+            val matchedStores = matchedCards.map { it.optString("storeName", "") }
+            val params = android.os.Bundle().apply {
+                putDouble("latitude", latitude)
+                putDouble("longitude", longitude)
+                putString("nearby_brands", nearbyBrands.joinToString(","))
+                putInt("matched_count", matchedCards.size)
+                putString("matched_stores", matchedStores.joinToString(","))
+                putString("sort_order", matchedStores.joinToString(","))
+            }
+            analytics.logEvent("widget_match_debug", params)
+        } catch (e: Exception) {
+            Log.e(TAG, "Firebase widget_match_debug 記錄失敗: $e")
         }
     }
 
