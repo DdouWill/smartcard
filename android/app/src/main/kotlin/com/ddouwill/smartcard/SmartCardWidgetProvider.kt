@@ -285,7 +285,7 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
         views.setViewVisibility(R.id.widget_arrow_up, View.VISIBLE)
         views.setViewVisibility(R.id.widget_arrow_down, View.VISIBLE)
         views.setViewVisibility(R.id.widget_stack_page, View.VISIBLE)
-        views.setTextViewText(R.id.widget_stack_page, "1/${cardCount}")
+        views.setTextViewText(R.id.widget_stack_page, "${cardCount} 張卡片")
 
         // 箭頭顏色（初始：第一張，▲ 亮可往上滑看下一張，▼ 暗）
         val enabledColor = android.graphics.Color.parseColor("#1565C0")
