@@ -78,11 +78,9 @@
         android:visibility="gone" />
 
     <!-- StackView：填滿中間 -->
-    <ListView
+    <StackView
         android:id="@+id/widget_stack_view"
-        android:divider="@null"
-        android:dividerHeight="0dp"
-        android:scrollbars="none"
+        android:loopViews="true"
         
         android:layout_width="match_parent"
         android:layout_height="0dp"
