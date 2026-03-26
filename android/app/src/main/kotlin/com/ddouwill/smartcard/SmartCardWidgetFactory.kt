@@ -67,15 +67,6 @@ class SmartCardWidgetFactory(private val context: Context) : RemoteViewsService.
         // Store name
         rv.setTextViewText(R.id.widget_item_store_name, storeName)
 
-        // Page indicator
-        rv.setTextViewText(R.id.widget_item_page_indicator, "${position + 1}/${cardCount}")
-
-        // Arrow colors
-        val disabledColor = Color.parseColor("#CCCCCC")
-        val enabledColor = Color.parseColor("#1565C0")
-        rv.setTextColor(R.id.widget_item_arrow_up, if (position == cardCount - 1) disabledColor else enabledColor)
-        rv.setTextColor(R.id.widget_item_arrow_down, if (position == 0) disabledColor else enabledColor)
-
         // Fill-in intent for card click（與 Provider 的 setPendingIntentTemplate 組合）
         val fillInIntent = Intent().apply {
             putExtra(SmartCardWidgetProvider.EXTRA_CARD_ID, cardId)

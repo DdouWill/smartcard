@@ -192,8 +192,11 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
         views: RemoteViews,
         widgetData: android.content.SharedPreferences
     ) {
-        // 隱藏 StackView
+        // 隱藏 StackView + 箭頭
         views.setViewVisibility(R.id.widget_stack_view, View.GONE)
+        views.setViewVisibility(R.id.widget_arrow_up, View.GONE)
+        views.setViewVisibility(R.id.widget_arrow_down, View.GONE)
+        views.setViewVisibility(R.id.widget_stack_page, View.GONE)
 
         val storeName = widgetData.getString("primary_store_name", "") ?: ""
         val cardId = widgetData.getString("primary_card_id", "") ?: ""
@@ -233,8 +236,11 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
         views: RemoteViews,
         widgetData: android.content.SharedPreferences
     ) {
-        // 隱藏 StackView
+        // 隱藏 StackView + 箭頭
         views.setViewVisibility(R.id.widget_stack_view, View.GONE)
+        views.setViewVisibility(R.id.widget_arrow_up, View.GONE)
+        views.setViewVisibility(R.id.widget_arrow_down, View.GONE)
+        views.setViewVisibility(R.id.widget_stack_page, View.GONE)
 
         val storeName = widgetData.getString("primary_store_name", "") ?: ""
         val cardId = widgetData.getString("primary_card_id", "") ?: ""
@@ -274,8 +280,18 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
         views.setViewVisibility(R.id.widget_empty_text, View.GONE)
         views.setViewVisibility(R.id.widget_nearest_text, View.GONE)
 
-        // 顯示 StackView
+        // 顯示 StackView + 箭頭 + 頁碼
         views.setViewVisibility(R.id.widget_stack_view, View.VISIBLE)
+        views.setViewVisibility(R.id.widget_arrow_up, View.VISIBLE)
+        views.setViewVisibility(R.id.widget_arrow_down, View.VISIBLE)
+        views.setViewVisibility(R.id.widget_stack_page, View.VISIBLE)
+        views.setTextViewText(R.id.widget_stack_page, "1/${cardCount}")
+
+        // 箭頭顏色（初始：第一張，▲ 亮可往上滑看下一張，▼ 暗）
+        val enabledColor = android.graphics.Color.parseColor("#1565C0")
+        val disabledColor = android.graphics.Color.parseColor("#CCCCCC")
+        views.setTextColor(R.id.widget_arrow_up, if (cardCount > 1) enabledColor else disabledColor)
+        views.setTextColor(R.id.widget_arrow_down, disabledColor)
 
         // 綁定 StackView 到 SmartCardWidgetService
         val serviceIntent = Intent(context, SmartCardWidgetService::class.java).apply {

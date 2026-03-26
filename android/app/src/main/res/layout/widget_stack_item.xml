@@ -2,89 +2,46 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="horizontal"
+    android:orientation="vertical"
     android:background="#FFFFFF"
-    android:paddingStart="8dp"
-    android:paddingTop="8dp"
-    android:paddingBottom="8dp"
-    android:paddingEnd="0dp"
+    android:padding="8dp"
     android:clickable="true">
 
-    <!-- 左欄：icon + 店名（上）、條碼（下） -->
+    <!-- icon + 店名 -->
     <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
 
-        <!-- 第一行：icon + 店名 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <ImageView
-                android:id="@+id/widget_item_icon"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
-                android:src="@mipmap/ic_launcher"
-                android:layout_marginEnd="6dp"
-                android:contentDescription="App icon" />
-
-            <TextView
-                android:id="@+id/widget_item_store_name"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textSize="13sp"
-                android:textColor="#333333"
-                android:textStyle="bold"
-                android:maxLines="1"
-                android:ellipsize="end" />
-        </LinearLayout>
-
-        <!-- 第二行：條碼（佔滿剩餘空間） -->
         <ImageView
-            android:id="@+id/widget_item_barcode"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
+            android:id="@+id/widget_item_icon"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@mipmap/ic_launcher"
+            android:layout_marginEnd="6dp"
+            android:contentDescription="App icon" />
+
+        <TextView
+            android:id="@+id/widget_item_store_name"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:scaleType="fitXY"
-            android:layout_marginTop="4dp"
-            android:contentDescription="Barcode" />
+            android:textSize="13sp"
+            android:textColor="#333333"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end" />
     </LinearLayout>
 
-    <!-- 右欄：▲ 頁碼 ▼，貼右邊緣 -->
-    <LinearLayout
-        android:layout_width="28dp"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:gravity="center">
-
-        <TextView
-            android:id="@+id/widget_item_arrow_up"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="▲"
-            android:textSize="14sp"
-            android:gravity="center" />
-
-        <TextView
-            android:id="@+id/widget_item_page_indicator"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textSize="11sp"
-            android:textColor="#888888"
-            android:gravity="center" />
-
-        <TextView
-            android:id="@+id/widget_item_arrow_down"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="▼"
-            android:textSize="14sp"
-            android:gravity="center" />
-    </LinearLayout>
+    <!-- 條碼（佔滿剩餘空間） -->
+    <ImageView
+        android:id="@+id/widget_item_barcode"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:scaleType="fitXY"
+        android:layout_marginTop="4dp"
+        android:contentDescription="Barcode" />
 
 </LinearLayout>
