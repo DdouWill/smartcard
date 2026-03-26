@@ -9,9 +9,11 @@
 //   - 無符合：顯示最近門市卡片（半透明 + 距離標注）或「附近無符合店家」
 // ============================================================
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../debug_config.dart';
 import '../models/member_card.dart';
 import '../services/location_service.dart';
 import '../services/store_location_service.dart';
@@ -369,6 +371,10 @@ class LocationStatusCard extends StatelessWidget {
 
   Widget _buildNoMatchCard(BuildContext context) {
     final nearest = locationResult?.nearestStore;
+
+    if (kEnableDebugLog) {
+      debugPrint('[NoMatch] nearest=${nearest?.brandName} dist=${nearest?.distanceMeters?.toStringAsFixed(0)}m threshold=$kNearestStoreMaxDistanceMeters');
+    }
 
     // 有最近門市、距離 <= 1000m、且有對應品牌卡片 → 顯示該卡片（半透明 + 距離標注）
     if (nearest != null &&

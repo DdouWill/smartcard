@@ -9,6 +9,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../debug_config.dart';
 import '../models/member_card.dart';
 import 'store_location_service.dart';
 
@@ -115,6 +116,10 @@ class LocationService {
 
     LocationResult result;
 
+    if (kEnableDebugLog) {
+      debugPrint('[Location] matchCardsByLocation start, cards=${allCards.length}, wifi=$enableWifi, gps=$enableGps');
+    }
+
     // ── Step 1：WiFi SSID 比對 ──
     if (enableWifi) {
       final wifiResult = await _matchByWifi(allCards);
@@ -129,6 +134,9 @@ class LocationService {
     Position? pos;
     if (enableGps) {
       pos = await getCurrentPosition();
+      if (kEnableDebugLog && pos != null) {
+        debugPrint('[Location] GPS: ${pos.latitude}, ${pos.longitude}');
+      }
       if (pos != null) {
         final gpsResult = await _matchByGps(allCards, pos);
         if (gpsResult.hasMatches) {
@@ -160,6 +168,13 @@ class LocationService {
         userLng: pos.longitude,
         brandFilter: userBrands,
       );
+      if (kEnableDebugLog) {
+        if (nearest != null) {
+          debugPrint('[Location] Nearest: ${nearest.brandName} @ ${nearest.distanceMeters.toStringAsFixed(0)}m');
+        } else {
+          debugPrint('[Location] Nearest: none found');
+        }
+      }
     }
     result = LocationResult(
       matchedCards: [],
@@ -281,9 +296,18 @@ class LocationService {
     for (final card in allCards) {
       if (card.gpsZones.isNotEmpty) {
         // 有自訂 GPS 圍欄 → 用卡片自帶座標比對
-        final inZone = card.gpsZones.any((zone) =>
-            _isInZone(position.latitude, position.longitude, zone));
-        if (inZone) matched.add(card);
+        for (final zone in card.gpsZones) {
+          final dist = calculateDistance(
+              position.latitude, position.longitude, zone.latitude, zone.longitude);
+          final inZone = dist <= zone.radiusMeters;
+          if (kEnableDebugLog) {
+            debugPrint('[Location] Match: ${card.storeName} @ ${dist.toStringAsFixed(0)}m (radius: ${zone.radiusMeters}m) → ${inZone ? "HIT" : "miss"}');
+          }
+          if (inZone) {
+            matched.add(card);
+            break;
+          }
+        }
       } else {
         // 無自訂圍欄 → 嘗試從 store_locations.json 查詢品牌門市
         final nearbyZones = await storeService.getNearbyStoreLocations(
@@ -292,9 +316,20 @@ class LocationService {
           userLng: position.longitude,
           radiusKm: 0.5, // 500m 粗篩，實際用 zone.radiusMeters 精確判斷
         );
-        final inZone = nearbyZones.any((zone) =>
-            _isInZone(position.latitude, position.longitude, zone));
-        if (inZone) matched.add(card);
+        bool isMatched = false;
+        for (final zone in nearbyZones) {
+          final dist = calculateDistance(
+              position.latitude, position.longitude, zone.latitude, zone.longitude);
+          final inZone = dist <= zone.radiusMeters;
+          if (kEnableDebugLog) {
+            debugPrint('[Location] Match: ${card.storeName} @ ${dist.toStringAsFixed(0)}m (radius: ${zone.radiusMeters}m) → ${inZone ? "HIT" : "miss"}');
+          }
+          if (inZone) {
+            isMatched = true;
+            break;
+          }
+        }
+        if (isMatched) matched.add(card);
       }
     }
 
@@ -308,13 +343,6 @@ class LocationService {
   // ──────────────────────────────────────────
   // 地理計算
   // ──────────────────────────────────────────
-
-  /// 判斷座標是否在地理圍欄內
-  /// 使用 Haversine 公式計算球面距離
-  bool _isInZone(double lat, double lng, GpsZone zone) {
-    final distance = calculateDistance(lat, lng, zone.latitude, zone.longitude);
-    return distance <= zone.radiusMeters;
-  }
 
   /// 計算兩點間球面距離（公尺）
   /// 使用 Haversine 公式
