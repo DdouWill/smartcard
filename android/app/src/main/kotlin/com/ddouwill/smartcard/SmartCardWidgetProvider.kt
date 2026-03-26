@@ -365,7 +365,7 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
             val w = if (isSquare) minOf(width, height) else width
             val h = if (isSquare) minOf(width, height) else height
 
-            val hints = mapOf(EncodeHintType.MARGIN to 1)
+            val hints = mapOf(EncodeHintType.MARGIN to 0)
             val bitMatrix = MultiFormatWriter().encode(value, format, w, h, hints)
 
             val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)

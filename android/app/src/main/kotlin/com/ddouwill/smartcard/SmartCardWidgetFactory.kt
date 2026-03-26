@@ -73,8 +73,8 @@ class SmartCardWidgetFactory(private val context: Context) : RemoteViewsService.
         // Arrow colors
         val disabledColor = Color.parseColor("#CCCCCC")
         val enabledColor = Color.parseColor("#1565C0")
-        rv.setTextColor(R.id.widget_item_arrow_up, if (position == 0) disabledColor else enabledColor)
-        rv.setTextColor(R.id.widget_item_arrow_down, if (position == cardCount - 1) disabledColor else enabledColor)
+        rv.setTextColor(R.id.widget_item_arrow_up, if (position == cardCount - 1) disabledColor else enabledColor)
+        rv.setTextColor(R.id.widget_item_arrow_down, if (position == 0) disabledColor else enabledColor)
 
         // Fill-in intent for card click（與 Provider 的 setPendingIntentTemplate 組合）
         val fillInIntent = Intent().apply {
@@ -114,7 +114,7 @@ class SmartCardWidgetFactory(private val context: Context) : RemoteViewsService.
                 h = height
             }
 
-            val hints = mapOf(EncodeHintType.MARGIN to 1)
+            val hints = mapOf(EncodeHintType.MARGIN to 0)
             val bitMatrix = MultiFormatWriter().encode(value, format, w, h, hints)
             val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
             for (x in 0 until w) {
