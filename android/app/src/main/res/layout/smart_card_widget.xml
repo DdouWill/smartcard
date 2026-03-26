@@ -60,7 +60,7 @@
         android:scaleType="fitXY"
         android:paddingHorizontal="8dp"
         android:layout_marginTop="4dp"
-        android:layout_marginBottom="2dp"
+        android:layout_marginBottom="8dp"
         android:visibility="gone"
         android:contentDescription="條碼" />
 
