@@ -50,7 +50,7 @@ class SmartCardWidgetFactory(private val context: Context) : RemoteViewsService.
         val cardId: String
 
         if (mode == "multipleCards") {
-            val idx = position % actualCardCount
+            val idx = if (actualCardCount > 0) position % actualCardCount else 0
             storeName = prefs.getString("card_${idx}_store_name", "") ?: ""
             barcodeValue = prefs.getString("card_${idx}_barcode_value", "") ?: ""
             barcodeFormat = prefs.getString("card_${idx}_barcode_format", "CODE_128") ?: "CODE_128"
