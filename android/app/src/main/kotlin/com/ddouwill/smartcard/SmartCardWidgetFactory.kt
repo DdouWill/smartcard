@@ -29,12 +29,12 @@ class SmartCardWidgetFactory(private val context: Context) : RemoteViewsService.
 
     override fun onDestroy() {}
 
-    override fun getCount(): Int = if (cardCount > 1) cardCount * 1000 else cardCount
+    override fun getCount(): Int = cardCount
 
     override fun getViewAt(position: Int): RemoteViews {
         val prefs = HomeWidgetPlugin.getData(context)
         val mode = prefs.getString("widget_mode", null)
-        val realPosition = if (cardCount > 1) position % cardCount else position
+
 
         val storeName: String
         val barcodeValue: String
@@ -43,10 +43,10 @@ class SmartCardWidgetFactory(private val context: Context) : RemoteViewsService.
         val cardId: String
 
         if (mode == "multipleCards") {
-            storeName = prefs.getString("card_${realPosition}_store_name", "") ?: ""
-            barcodeValue = prefs.getString("card_${realPosition}_barcode_value", "") ?: ""
-            barcodeFormat = prefs.getString("card_${realPosition}_barcode_format", "CODE_128") ?: "CODE_128"
-            cardId = prefs.getString("card_${realPosition}_card_id", "") ?: ""
+            storeName = prefs.getString("card_${position}_store_name", "") ?: ""
+            barcodeValue = prefs.getString("card_${position}_barcode_value", "") ?: ""
+            barcodeFormat = prefs.getString("card_${position}_barcode_format", "CODE_128") ?: "CODE_128"
+            cardId = prefs.getString("card_${position}_card_id", "") ?: ""
         } else {
             storeName = prefs.getString("primary_store_name", "") ?: ""
             barcodeValue = prefs.getString("primary_barcode_value", "") ?: ""
@@ -82,9 +82,9 @@ class SmartCardWidgetFactory(private val context: Context) : RemoteViewsService.
 
     override fun getViewTypeCount(): Int = 1
 
-    override fun getItemId(position: Int): Long = (if (cardCount > 1) position % cardCount else position).toLong()
+    override fun getItemId(position: Int): Long = position.toLong()
 
-    override fun hasStableIds(): Boolean = false
+    override fun hasStableIds(): Boolean = true
 
     private fun generateBarcodeBitmap(
         value: String,
