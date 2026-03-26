@@ -3,7 +3,7 @@
 // 根據定位結果動態顯示對應的會員卡條碼
 //
 // 多卡模式：儲存所有匹配卡片的完整資料（含條碼），
-// 由原生端透過 ◀ ▶ 箭頭切換顯示
+// 由原生端 StackView 上下滑動切換顯示
 
 import 'dart:async';
 import 'package:home_widget/home_widget.dart';
@@ -16,7 +16,7 @@ import 'store_location_service.dart';
 enum WidgetDisplayMode {
   noMatch, // 0 家符合 → 顯示最近門市或空狀態
   singleCard, // 1 家符合 → 直接顯示條碼
-  multipleCards, // 2+ 家符合 → 顯示條碼 + ◀ ▶ 切換
+  multipleCards, // 2+ 家符合 → StackView 上下滑動切換
 }
 
 /// Widget 服務（Singleton）
@@ -51,9 +51,6 @@ class WidgetService {
     NearestStoreInfo? nearestStore,
   }) async {
     try {
-      // 每次資料更新都重設導航索引為 0
-      await HomeWidget.saveWidgetData<int>('widget_current_index', 0);
-
       if (matchedCards.isEmpty) {
         // 無符合 → 距離 <= 1000m 時顯示最近門市卡片，否則顯示空狀態
         await _updateWithNoMatch(nearestStore, allCards);
@@ -61,7 +58,7 @@ class WidgetService {
         // 1 張符合 → 直接顯示條碼
         await _updateWithSingleCard(matchedCards.first);
       } else {
-        // 多張符合 → 儲存所有卡片，由原生端 ◀ ▶ 切換
+        // 多張符合 → 儲存所有卡片，由原生端 StackView 切換
         await _updateWithMultipleCards(matchedCards);
       }
 

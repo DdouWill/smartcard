@@ -49,8 +49,6 @@
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.ddouwill.smartcard.WIDGET_CLICK" />
                 <action android:name="com.ddouwill.smartcard.LOCATION_UPDATE" />
-                <action android:name="com.ddouwill.smartcard.NAV_PREV" />
-                <action android:name="com.ddouwill.smartcard.NAV_NEXT" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -80,6 +78,10 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+
+        <service
+            android:name=".SmartCardWidgetService"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
 
         <service
             android:name=".LocationForegroundService"
