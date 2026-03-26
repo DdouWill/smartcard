@@ -5,9 +5,11 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../debug_config.dart';
 import '../models/member_card.dart';
 
 /// noMatch 時顯示最近門市卡片的最大距離（公尺）
@@ -429,7 +431,16 @@ class StoreLocationService {
       }
     }
 
-    if (minDist == null || minBrand == null || minZone == null) return null;
+    if (minDist == null || minBrand == null || minZone == null) {
+      if (kEnableDebugLog) {
+        debugPrint('[StoreLocation] findNearestStore: none found within ${maxDistanceKm}km');
+      }
+      return null;
+    }
+
+    if (kEnableDebugLog) {
+      debugPrint('[StoreLocation] findNearestStore: $minBrand @ ${minDist.toStringAsFixed(0)}m (${minZone.label})');
+    }
 
     return NearestStoreInfo(
       brandName: minBrand,

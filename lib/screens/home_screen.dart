@@ -196,6 +196,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             onEdit: () async {
                               await AppRouter.pushEditCard(context, card: card);
                               _controller.initialize();
+                              _controller.runLocationDetection();
                             },
                             onDelete: () => _deleteCard(card),
                           );
@@ -215,7 +216,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => AppRouter.pushAddCard(context),
+        onPressed: () async {
+          await AppRouter.pushAddCard(context);
+          _controller.runLocationDetection();
+        },
         icon: const Icon(Icons.add),
         label: const Text('新增卡片'),
       ),
@@ -251,7 +255,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
             const SizedBox(height: 32),
             FilledButton.tonalIcon(
-              onPressed: () => AppRouter.pushAddCard(context),
+              onPressed: () async {
+                await AppRouter.pushAddCard(context);
+                _controller.runLocationDetection();
+              },
               icon: const Icon(Icons.add),
               label: const Text('新增會員卡'),
             ),
@@ -279,6 +286,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ],
       ),
     );
-    if (confirmed == true) await _controller.deleteCard(card.id);
+    if (confirmed == true) {
+      await _controller.deleteCard(card.id);
+      _controller.runLocationDetection();
+    }
   }
 }
