@@ -4,8 +4,9 @@
 
 import 'dart:convert';
 import 'dart:math';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
-import 'package:hive_flutter/hive_flutter.dart'; 
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../models/member_card.dart';
@@ -90,7 +91,8 @@ class DatabaseService {
       if (existingKey != null) {
         return base64.decode(existingKey);
       }
-    } catch (_) {
+    } catch (e, stackTrace) {
+      FirebaseCrashlytics.instance.recordError(e, stackTrace);
     }
 
     // 首次執行：生成新的 256-bit (32 bytes) 隨機金鑰
@@ -113,7 +115,8 @@ class DatabaseService {
   MemberCard? getCardById(String id) {
     try {
       return _cardsBox.get(id); // 使用 key (UUID) 直接存取效能更好
-    } catch (_) {
+    } catch (e, stackTrace) {
+      FirebaseCrashlytics.instance.recordError(e, stackTrace);
       return null;
     }
   }

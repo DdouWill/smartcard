@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
 import 'models/member_card.dart';
 import 'models/app_settings.dart';
@@ -50,9 +51,10 @@ class AppController extends ChangeNotifier {
       await _syncCardsToNative();
 
       await startBackgroundUpdates();
-    } catch (e) {
+    } catch (e, stackTrace) {
       _initError = '初始化失敗：$e';
       debugPrint("initialize error: $e");
+      FirebaseCrashlytics.instance.recordError(e, stackTrace);
     }
   }
 
@@ -134,7 +136,8 @@ class AppController extends ChangeNotifier {
         allCards: _cards,
         nearestStore: result.nearestStore,
       );
-    } catch (_) {
+    } catch (e, stackTrace) {
+      FirebaseCrashlytics.instance.recordError(e, stackTrace);
     } finally {
       _isDetecting = false;
       notifyListeners();
@@ -204,7 +207,9 @@ class AppController extends ChangeNotifier {
         'native_card_list',
         jsonEncode(list),
       );
-    } catch (_) {}
+    } catch (e, stackTrace) {
+      FirebaseCrashlytics.instance.recordError(e, stackTrace);
+    }
   }
 
   void _refreshCards() {
@@ -224,7 +229,9 @@ class AppController extends ChangeNotifier {
         allCards: _cards,
         nearestStore: _locationResult?.nearestStore,
       );
-    } catch (_) {}
+    } catch (e, stackTrace) {
+      FirebaseCrashlytics.instance.recordError(e, stackTrace);
+    }
   }
 
   @override

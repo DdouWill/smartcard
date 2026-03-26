@@ -1,8 +1,11 @@
 // SmartCard App 入口
+import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
 import 'app_controller.dart';
 import 'app_router.dart';
@@ -20,13 +23,23 @@ Future<void> main() async {
   // 0. 初始化 Firebase
   await Firebase.initializeApp();
 
-  // 1. 初始化 Hive 加密資料庫 (含 KeyStore 金鑰處理)
+  // Debug mode 不送 crash report
+  await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(!kDebugMode);
+
+  // 1. Crashlytics 錯誤追蹤
+  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+  PlatformDispatcher.instance.onError = (error, stack) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    return true;
+  };
+
+  // 2. 初始化 Hive 加密資料庫 (含 KeyStore 金鑰處理)
   await DatabaseService().initialize();
 
-  // 2. 初始化 AppController (載入卡片與設定，啟動計時器)
+  // 3. 初始化 AppController (載入卡片與設定，啟動計時器)
   await AppController().initialize();
 
-  // 3. Firebase Analytics: app_started
+  // 4. Firebase Analytics: app_started
   FirebaseAnalytics.instance.logEvent(name: 'app_started');
 
   runApp(const SmartCardApp());
