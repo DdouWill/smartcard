@@ -35,9 +35,9 @@ class GeofenceManager {
         private const val MAX_GEOFENCES = 80
         private const val GEOFENCE_EXPIRATION = Geofence.NEVER_EXPIRE
         private const val REQUEST_CODE_GEOFENCE = 8002
-        private const val KEY_CARD_LIST = "native_card_list"
-        private const val BOUNDING_BOX_LAT_DELTA = 0.045  // ±0.045° ≈ 5km
-        private const val BOUNDING_BOX_LNG_DELTA = 0.055  // ±0.055° ≈ 5km
+        private const val KEY_CARD_LIST = WidgetConstants.KEY_CARD_LIST
+        private const val BOUNDING_BOX_LAT_DELTA = WidgetConstants.BOUNDING_BOX_LAT_DELTA
+        private const val BOUNDING_BOX_LNG_DELTA = WidgetConstants.BOUNDING_BOX_LNG_DELTA
 
         /**
          * 註冊最近 80 間門市的 geofence
@@ -169,12 +169,8 @@ class GeofenceManager {
         // ──────────────────────────────────────────
 
         private fun hasLocationPermission(context: Context): Boolean {
-            return ContextCompat.checkSelfPermission(
-                context, android.Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(
-                context, android.Manifest.permission.ACCESS_COARSE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
+            return hasPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION) ||
+                hasPermission(context, android.Manifest.permission.ACCESS_COARSE_LOCATION)
         }
 
         private fun hasPermission(context: Context, permission: String): Boolean {
@@ -300,7 +296,7 @@ class GeofenceManager {
 
             val filteredCandidates = stores.size
 
-            Log.d(TAG, "粗篩: 全量門市=$totalLocations, bounding box 後=$totalCandidates, 品牌過濾後=$filteredCandidates")
+            Log.d(TAG, "粗篩: 全量門市=$totalLocations, 距離篩後=$totalCandidates, 品牌過濾後=$filteredCandidates")
 
             // 按距離排序，取最近 80 間
             return FilterResult(

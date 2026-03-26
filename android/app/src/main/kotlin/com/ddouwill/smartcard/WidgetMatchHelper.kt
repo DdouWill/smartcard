@@ -25,15 +25,15 @@ object WidgetMatchHelper {
     private const val NEAREST_STORE_MAX_DISTANCE = 1000f
 
     // native_card_list key（Flutter 端寫入）
-    private const val KEY_CARD_LIST = "native_card_list"
+    private const val KEY_CARD_LIST = WidgetConstants.KEY_CARD_LIST
 
     // ── 位置快取粗篩 ──
-    private var cachedNearbyStores: JSONObject? = null  // 粗篩後的子集
-    private var cacheLat: Double = Double.NaN
-    private var cacheLng: Double = Double.NaN
+    @Volatile private var cachedNearbyStores: JSONObject? = null  // 粗篩後的子集
+    @Volatile private var cacheLat: Double = Double.NaN
+    @Volatile private var cacheLng: Double = Double.NaN
     private const val CACHE_INVALIDATION_DISTANCE = 1000f  // 1km
-    private const val BOUNDING_BOX_LAT_DELTA = 0.045  // ±0.045° ≈ 5km
-    private const val BOUNDING_BOX_LNG_DELTA = 0.055  // ±0.055° ≈ 5km
+    private const val BOUNDING_BOX_LAT_DELTA = WidgetConstants.BOUNDING_BOX_LAT_DELTA
+    private const val BOUNDING_BOX_LNG_DELTA = WidgetConstants.BOUNDING_BOX_LNG_DELTA
 
     /**
      * 根據目前位置匹配使用者卡片並更新 widget
