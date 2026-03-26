@@ -39,26 +39,32 @@ object WidgetMatchHelper {
     fun matchAndUpdateWidget(context: Context, latitude: Double, longitude: Double) {
         Log.d(TAG, "開始匹配 (lat=$latitude, lng=$longitude)")
 
+        // 讀取 store_locations.json（只讀一次，傳入各 helper）
+        val storesObj = loadStoreLocations(context) ?: return
+
         // 1. 找附近 200m 內的門市品牌
-        val nearbyBrands = findNearbyBrands(context, latitude, longitude)
+        val nearbyBrands = findNearbyBrands(storesObj, latitude, longitude)
         Log.d(TAG, "附近品牌: $nearbyBrands")
 
         // 2. 讀取使用者卡片清單
         val cards = loadCardList(context)
         Log.d(TAG, "使用者卡片數: ${cards.size}")
 
-        // 3. 比對匹配
-        val matchedCards = cards.filter { card ->
+        // 3. 比對匹配，依品牌最近門市距離排序（近→遠）
+        val sortedMatchedCards = cards.filter { card ->
             val storeName = card.optString("storeName", "")
             nearbyBrands.any { brand ->
                 storeName.contains(brand, ignoreCase = true)
             }
+        }.also { matched ->
+            Log.d(TAG, "匹配卡片數: ${matched.size}")
+        }.sortedBy { card ->
+            findMinDistanceForBrand(storesObj, latitude, longitude, card.optString("storeName", ""))
         }
-        Log.d(TAG, "匹配卡片數: ${matchedCards.size}")
 
         // 找最近品牌（用於 analytics 和 nearest_store_text）
         val cardBrands = cards.map { it.optString("storeName", "") }.filter { it.isNotEmpty() }.toSet()
-        val nearestBrand = findNearestBrand(context, latitude, longitude, cardBrands)
+        val nearestBrand = findNearestBrand(storesObj, latitude, longitude, cardBrands)
 
         // 4. 寫入 widget SharedPreferences
         val widgetData = HomeWidgetPlugin.getData(context)
@@ -68,7 +74,7 @@ object WidgetMatchHelper {
         editor.putInt("widget_current_index", 0)
 
         when {
-            matchedCards.isEmpty() -> {
+            sortedMatchedCards.isEmpty() -> {
                 editor.putString("widget_mode", "noMatch")
 
                 // 找最近門市品牌對應的卡片（距離 <= 1000m）
@@ -104,9 +110,9 @@ object WidgetMatchHelper {
                 }
             }
 
-            matchedCards.size == 1 -> {
+            sortedMatchedCards.size == 1 -> {
                 editor.putString("widget_mode", "singleCard")
-                val card = matchedCards.first()
+                val card = sortedMatchedCards.first()
                 editor.putString("widget_title", card.optString("storeName", ""))
                 saveCardToPrefs(editor, "primary", card)
                 editor.putString("nearest_store_text", "")
@@ -114,9 +120,9 @@ object WidgetMatchHelper {
 
             else -> {
                 editor.putString("widget_mode", "multipleCards")
-                editor.putString("widget_title", "附近 ${matchedCards.size} 家店")
+                editor.putString("widget_title", "附近 ${sortedMatchedCards.size} 家店")
 
-                val displayCards = matchedCards.take(10)
+                val displayCards = sortedMatchedCards.take(10)
                 editor.putInt("card_count", displayCards.size)
 
                 for (i in 0 until 10) {
@@ -136,7 +142,25 @@ object WidgetMatchHelper {
         SmartCardWidgetProvider.updateAllWidgets(context)
 
         // Firebase Analytics
-        logMatchResult(context, matchedCards, nearestBrand)
+        logMatchResult(context, sortedMatchedCards, nearestBrand)
+        logMatchDebug(context, latitude, longitude, nearbyBrands, sortedMatchedCards)
+    }
+
+    // ──────────────────────────────────────────
+    // store_locations.json 讀取
+    // ──────────────────────────────────────────
+
+    private fun loadStoreLocations(context: Context): JSONObject? {
+        return try {
+            val jsonStr = context.assets
+                .open("flutter_assets/lib/data/store_locations.json")
+                .bufferedReader()
+                .use { it.readText() }
+            JSONObject(jsonStr).getJSONObject("stores")
+        } catch (e: Exception) {
+            Log.e(TAG, "讀取 store_locations.json 失敗: $e")
+            null
+        }
     }
 
     // ──────────────────────────────────────────
@@ -144,27 +168,19 @@ object WidgetMatchHelper {
     // ──────────────────────────────────────────
 
     /**
-     * 從 store_locations.json 找出半徑 200m 內的所有品牌
+     * 從已解析的 stores JSONObject 找出半徑 200m 內的所有品牌
      */
     private fun findNearbyBrands(
-        context: Context,
+        storesObj: JSONObject,
         latitude: Double,
         longitude: Double
     ): Set<String> {
         val brands = mutableSetOf<String>()
+        val brandKeys = storesObj.keys()
 
-        try {
-            val jsonStr = context.assets
-                .open("flutter_assets/lib/data/store_locations.json")
-                .bufferedReader()
-                .use { it.readText() }
-
-            val root = JSONObject(jsonStr)
-            val storesObj = root.getJSONObject("stores")
-            val brandKeys = storesObj.keys()
-
-            while (brandKeys.hasNext()) {
-                val brand = brandKeys.next()
+        while (brandKeys.hasNext()) {
+            val brand = brandKeys.next()
+            try {
                 val brandObj = storesObj.getJSONObject(brand)
                 val locations = brandObj.getJSONArray("locations")
 
@@ -180,9 +196,10 @@ object WidgetMatchHelper {
                         break // 此品牌已有門市在範圍內，不需繼續檢查
                     }
                 }
+            } catch (e: Exception) {
+                Log.w(TAG, "跳過格式異常的品牌 $brand: $e")
+                continue
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "讀取 store_locations.json 失敗: $e")
         }
 
         return brands
@@ -192,30 +209,22 @@ object WidgetMatchHelper {
      * 找出最近的品牌門市（用於空狀態提示）
      */
     private fun findNearestBrand(
-        context: Context,
+        storesObj: JSONObject,
         latitude: Double,
         longitude: Double,
         cardBrands: Set<String>? = null
     ): NearestBrandInfo? {
         var nearestBrand: String? = null
         var nearestDistance = Float.MAX_VALUE
+        val brandKeys = storesObj.keys()
 
-        try {
-            val jsonStr = context.assets
-                .open("flutter_assets/lib/data/store_locations.json")
-                .bufferedReader()
-                .use { it.readText() }
-
-            val root = JSONObject(jsonStr)
-            val storesObj = root.getJSONObject("stores")
-            val brandKeys = storesObj.keys()
-
-            while (brandKeys.hasNext()) {
-                val brand = brandKeys.next()
-                // 只搜尋使用者有卡片的品牌
-                if (cardBrands != null && !cardBrands.any { cb ->
-                    brand.contains(cb, ignoreCase = true) || cb.contains(brand, ignoreCase = true)
-                }) continue
+        while (brandKeys.hasNext()) {
+            val brand = brandKeys.next()
+            // 只搜尋使用者有卡片的品牌
+            if (cardBrands != null && !cardBrands.any { cb ->
+                brand.contains(cb, ignoreCase = true) || cb.contains(brand, ignoreCase = true)
+            }) continue
+            try {
                 val brandObj = storesObj.getJSONObject(brand)
                 val locations = brandObj.getJSONArray("locations")
 
@@ -231,9 +240,10 @@ object WidgetMatchHelper {
                         nearestBrand = brand
                     }
                 }
+            } catch (e: Exception) {
+                Log.w(TAG, "跳過格式異常的品牌 $brand: $e")
+                continue
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "尋找最近品牌失敗: $e")
         }
 
         return if (nearestBrand != null) {
@@ -292,6 +302,47 @@ object WidgetMatchHelper {
     // 工具方法
     // ──────────────────────────────────────────
 
+    /**
+     * 取得某品牌（storeName）在 store_locations.json 中距離最近的門市距離（公尺）。
+     * 若找不到對應品牌則回傳 Float.MAX_VALUE。
+     */
+    private fun findMinDistanceForBrand(
+        storesObj: JSONObject,
+        latitude: Double,
+        longitude: Double,
+        storeName: String
+    ): Float {
+        var minDistance = Float.MAX_VALUE
+        val brandKeys = storesObj.keys()
+
+        while (brandKeys.hasNext()) {
+            val brand = brandKeys.next()
+            if (!storeName.contains(brand, ignoreCase = true)) continue
+
+            try {
+                val brandObj = storesObj.getJSONObject(brand)
+                val locations = brandObj.getJSONArray("locations")
+
+                for (i in 0 until locations.length()) {
+                    val loc = locations.getJSONObject(i)
+                    val lat = loc.optDouble("lat", Double.NaN)
+                    val lng = loc.optDouble("lng", Double.NaN)
+                    if (lat.isNaN() || lng.isNaN()) continue
+
+                    val distance = calculateDistance(latitude, longitude, lat, lng)
+                    if (distance < minDistance) {
+                        minDistance = distance
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "跳過格式異常的品牌 $brand: $e")
+                continue
+            }
+        }
+
+        return minDistance
+    }
+
     private fun calculateDistance(
         lat1: Double, lng1: Double,
         lat2: Double, lng2: Double
@@ -321,6 +372,30 @@ object WidgetMatchHelper {
             analytics.logEvent("widget_match_result", params)
         } catch (e: Exception) {
             Log.e(TAG, "Firebase Analytics 記錄失敗: $e")
+        }
+    }
+
+    private fun logMatchDebug(
+        context: Context,
+        latitude: Double,
+        longitude: Double,
+        nearbyBrands: Set<String>,
+        matchedCards: List<JSONObject>
+    ) {
+        try {
+            val analytics = com.google.firebase.analytics.FirebaseAnalytics.getInstance(context)
+            val matchedStores = matchedCards.map { it.optString("storeName", "") }
+            val params = android.os.Bundle().apply {
+                putDouble("latitude", latitude)
+                putDouble("longitude", longitude)
+                putString("nearby_brands", nearbyBrands.joinToString(","))
+                putInt("matched_count", matchedCards.size)
+                putString("matched_stores", matchedStores.joinToString(","))
+                putString("sort_order", matchedStores.joinToString(","))
+            }
+            analytics.logEvent("widget_match_debug", params)
+        } catch (e: Exception) {
+            Log.e(TAG, "Firebase widget_match_debug 記錄失敗: $e")
         }
     }
 
