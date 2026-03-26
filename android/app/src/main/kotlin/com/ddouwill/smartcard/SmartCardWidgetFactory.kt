@@ -14,16 +14,23 @@ import es.antonborri.home_widget.HomeWidgetPlugin
 class SmartCardWidgetFactory(private val context: Context) : RemoteViewsService.RemoteViewsFactory {
 
     private var cardCount = 0
+    private var actualCardCount = 0
 
     override fun onCreate() {}
 
     override fun onDataSetChanged() {
         val prefs = HomeWidgetPlugin.getData(context)
         val mode = prefs.getString("widget_mode", null)
-        cardCount = if (mode == "multipleCards") {
+        actualCardCount = if (mode == "multipleCards") {
             prefs.getInt("card_count", 0)
         } else {
             if (prefs.getString("primary_barcode_value", null) != null) 1 else 0
+        }
+        // < 4 張時填充到 4 張，讓 StackView 堆疊效果飽滿
+        cardCount = if (actualCardCount in 1..3) {
+            4
+        } else {
+            actualCardCount
         }
     }
 
@@ -43,10 +50,11 @@ class SmartCardWidgetFactory(private val context: Context) : RemoteViewsService.
         val cardId: String
 
         if (mode == "multipleCards") {
-            storeName = prefs.getString("card_${position}_store_name", "") ?: ""
-            barcodeValue = prefs.getString("card_${position}_barcode_value", "") ?: ""
-            barcodeFormat = prefs.getString("card_${position}_barcode_format", "CODE_128") ?: "CODE_128"
-            cardId = prefs.getString("card_${position}_card_id", "") ?: ""
+            val idx = if (actualCardCount > 0) position % actualCardCount else 0
+            storeName = prefs.getString("card_${idx}_store_name", "") ?: ""
+            barcodeValue = prefs.getString("card_${idx}_barcode_value", "") ?: ""
+            barcodeFormat = prefs.getString("card_${idx}_barcode_format", "CODE_128") ?: "CODE_128"
+            cardId = prefs.getString("card_${idx}_card_id", "") ?: ""
         } else {
             storeName = prefs.getString("primary_store_name", "") ?: ""
             barcodeValue = prefs.getString("primary_barcode_value", "") ?: ""
