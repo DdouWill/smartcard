@@ -1,7 +1,7 @@
 name: smartcard
 description: 智慧會員卡錢包 - 完全離線、自動偵測店家、桌面小工具顯示條碼
 publish_to: 'none'
-version: 1.0.17+20
+version: 1.1.0+21
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
