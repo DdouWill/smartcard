@@ -4,7 +4,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@drawable/widget_card_bg"
-    android:paddingHorizontal="8dp"
+    android:paddingHorizontal="16dp"
     android:paddingTop="6dp"
     android:paddingBottom="16dp"
     android:clipToPadding="true"
