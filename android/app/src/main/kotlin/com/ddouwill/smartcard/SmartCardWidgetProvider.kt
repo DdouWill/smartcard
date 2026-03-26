@@ -55,6 +55,8 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
     companion object {
         const val ACTION_WIDGET_CLICK = "com.ddouwill.smartcard.WIDGET_CLICK"
         const val ACTION_LOCATION_UPDATE = "com.ddouwill.smartcard.LOCATION_UPDATE"
+        const val ACTION_NEXT_CARD = "com.ddouwill.smartcard.NEXT_CARD"
+        const val ACTION_PREV_CARD = "com.ddouwill.smartcard.PREV_CARD"
         const val EXTRA_CARD_ID = "card_id"
 
         const val MODE_NO_MATCH = "noMatch"
@@ -129,6 +131,20 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
         when (intent.action) {
             ACTION_LOCATION_UPDATE -> {
                 updateAllWidgets(context)
+            }
+            ACTION_NEXT_CARD, ACTION_PREV_CARD -> {
+                val appWidgetManager = AppWidgetManager.getInstance(context)
+                val componentName = android.content.ComponentName(context, SmartCardWidgetProvider::class.java)
+                val widgetIds = appWidgetManager.getAppWidgetIds(componentName)
+                for (id in widgetIds) {
+                    val views = RemoteViews(context.packageName, R.layout.smart_card_widget)
+                    if (intent.action == ACTION_NEXT_CARD) {
+                        views.showNext(R.id.widget_stack_view)
+                    } else {
+                        views.showPrevious(R.id.widget_stack_view)
+                    }
+                    appWidgetManager.partiallyUpdateAppWidget(id, views)
+                }
             }
             ACTION_WIDGET_CLICK -> {
                 val cardId = intent.getStringExtra(EXTRA_CARD_ID)
