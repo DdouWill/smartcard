@@ -4,7 +4,8 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="#FFFFFF"
-    android:padding="8dp"
+    android:paddingVertical="4dp"
+    android:paddingHorizontal="2dp"
     android:clickable="true">
 
     <!-- icon + 店名 -->
