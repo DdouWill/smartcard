@@ -6,6 +6,7 @@
     android:background="#FFFFFF"
     android:paddingVertical="4dp"
     android:paddingHorizontal="2dp"
+    android:gravity="center_horizontal"
     android:clickable="true">
 
     <!-- icon + 店名 -->
@@ -35,13 +36,13 @@
             android:ellipsize="end" />
     </LinearLayout>
 
-    <!-- 條碼（佔滿剩餘空間） -->
+    <!-- 條碼（置中，填滿可用空間） -->
     <ImageView
         android:id="@+id/widget_item_barcode"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:scaleType="fitXY"
+        android:scaleType="fitCenter"
         android:layout_marginTop="4dp"
         android:contentDescription="Barcode" />
 
