@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.core.content.ContextCompat
@@ -51,6 +52,18 @@ class GeofenceManager {
             if (!hasLocationPermission(context)) {
                 Log.w(TAG, "缺少定位權限，無法註冊 geofence")
                 return
+            }
+
+            // Android 版本判斷 + 背景定位權限檢查
+            Log.d(TAG, "SDK version: ${Build.VERSION.SDK_INT}, " +
+                "ACCESS_FINE_LOCATION: ${hasPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION)}, " +
+                "ACCESS_BACKGROUND_LOCATION: ${hasPermission(context, android.Manifest.permission.ACCESS_BACKGROUND_LOCATION)}")
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (!hasPermission(context, android.Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
+                    Log.w(TAG, "Android 12+ 需要 ACCESS_BACKGROUND_LOCATION 權限才能正常觸發 geofence，" +
+                        "目前缺少此權限，geofence 可能無法在背景觸發")
+                }
             }
 
             // 儲存目前位置供重新註冊使用
@@ -162,6 +175,10 @@ class GeofenceManager {
             ContextCompat.checkSelfPermission(
                 context, android.Manifest.permission.ACCESS_COARSE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
+        }
+
+        private fun hasPermission(context: Context, permission: String): Boolean {
+            return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
         }
 
         private fun getGeofencePendingIntent(context: Context): PendingIntent {
