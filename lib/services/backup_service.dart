@@ -7,6 +7,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:meta/meta.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pointycastle/export.dart';
@@ -127,7 +128,8 @@ class BackupService {
 
         await _db.addCard(card);
         imported++;
-      } catch (_) {
+      } catch (e, stackTrace) {
+        FirebaseCrashlytics.instance.recordError(e, stackTrace);
         skipped++;
       }
     }

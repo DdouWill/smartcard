@@ -6,6 +6,7 @@
 // 由原生端 StackView 上下滑動切換顯示
 
 import 'dart:async';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:home_widget/home_widget.dart';
 
 import '../models/member_card.dart';
@@ -64,7 +65,9 @@ class WidgetService {
 
       // 通知 Android 重繪 Widget
       await _notifyWidgetUpdate();
-    } catch (_) {}
+    } catch (e, stackTrace) {
+      FirebaseCrashlytics.instance.recordError(e, stackTrace);
+    }
   }
 
   /// 無符合時：距離 <= 1000m 顯示最近門市對應的卡片，否則顯示空狀態

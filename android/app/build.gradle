@@ -7,6 +7,7 @@ plugins {
     // Flutter Gradle Plugin 必須在 com.android.application 之後套用
     id "dev.flutter.flutter-gradle-plugin"
     id "com.google.gms.google-services"
+    id "com.google.firebase.crashlytics"
 }
 
 android {
