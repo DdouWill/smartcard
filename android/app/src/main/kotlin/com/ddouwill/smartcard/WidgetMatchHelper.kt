@@ -24,16 +24,11 @@ object WidgetMatchHelper {
     // noMatch 時顯示最近門市卡片的最大距離（公尺）
     private const val NEAREST_STORE_MAX_DISTANCE = 1000f
 
-    // native_card_list key（Flutter 端寫入）
-    private const val KEY_CARD_LIST = WidgetConstants.KEY_CARD_LIST
-
     // ── 位置快取粗篩 ──
     @Volatile private var cachedNearbyStores: JSONObject? = null  // 粗篩後的子集
     @Volatile private var cacheLat: Double = Double.NaN
     @Volatile private var cacheLng: Double = Double.NaN
     private const val CACHE_INVALIDATION_DISTANCE = 1000f  // 1km
-    private const val BOUNDING_BOX_LAT_DELTA = WidgetConstants.BOUNDING_BOX_LAT_DELTA
-    private const val BOUNDING_BOX_LNG_DELTA = WidgetConstants.BOUNDING_BOX_LNG_DELTA
 
     /**
      * 根據目前位置匹配使用者卡片並更新 widget
@@ -201,10 +196,10 @@ object WidgetMatchHelper {
         // 快取 MISS：重新從完整資料粗篩
         val allStores = loadStoreLocations(context) ?: return null
 
-        val minLat = latitude - BOUNDING_BOX_LAT_DELTA
-        val maxLat = latitude + BOUNDING_BOX_LAT_DELTA
-        val minLng = longitude - BOUNDING_BOX_LNG_DELTA
-        val maxLng = longitude + BOUNDING_BOX_LNG_DELTA
+        val minLat = latitude - WidgetConstants.BOUNDING_BOX_LAT_DELTA
+        val maxLat = latitude + WidgetConstants.BOUNDING_BOX_LAT_DELTA
+        val minLng = longitude - WidgetConstants.BOUNDING_BOX_LNG_DELTA
+        val maxLng = longitude + WidgetConstants.BOUNDING_BOX_LNG_DELTA
 
         val filtered = JSONObject()
         var totalLocations = 0
@@ -348,7 +343,7 @@ object WidgetMatchHelper {
      */
     private fun loadCardList(context: Context): List<JSONObject> {
         val widgetData = HomeWidgetPlugin.getData(context)
-        val jsonStr = widgetData.getString(KEY_CARD_LIST, null) ?: return emptyList()
+        val jsonStr = widgetData.getString(WidgetConstants.KEY_CARD_LIST, null) ?: return emptyList()
 
         return try {
             val array = JSONArray(jsonStr)

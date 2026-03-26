@@ -35,9 +35,6 @@ class GeofenceManager {
         private const val MAX_GEOFENCES = 80
         private const val GEOFENCE_EXPIRATION = Geofence.NEVER_EXPIRE
         private const val REQUEST_CODE_GEOFENCE = 8002
-        private const val KEY_CARD_LIST = WidgetConstants.KEY_CARD_LIST
-        private const val BOUNDING_BOX_LAT_DELTA = WidgetConstants.BOUNDING_BOX_LAT_DELTA
-        private const val BOUNDING_BOX_LNG_DELTA = WidgetConstants.BOUNDING_BOX_LNG_DELTA
 
         /**
          * 註冊最近 80 間門市的 geofence
@@ -202,7 +199,7 @@ class GeofenceManager {
         private fun loadUserBrands(context: Context): Set<String> {
             return try {
                 val widgetData = HomeWidgetPlugin.getData(context)
-                val jsonStr = widgetData.getString(KEY_CARD_LIST, null)
+                val jsonStr = widgetData.getString(WidgetConstants.KEY_CARD_LIST, null)
                     ?: return emptySet()
                 val array = JSONArray(jsonStr)
                 (0 until array.length()).mapNotNull { i ->
@@ -232,10 +229,10 @@ class GeofenceManager {
             var totalLocations = 0
 
             // bounding box 粗篩邊界
-            val minLat = latitude - BOUNDING_BOX_LAT_DELTA
-            val maxLat = latitude + BOUNDING_BOX_LAT_DELTA
-            val minLng = longitude - BOUNDING_BOX_LNG_DELTA
-            val maxLng = longitude + BOUNDING_BOX_LNG_DELTA
+            val minLat = latitude - WidgetConstants.BOUNDING_BOX_LAT_DELTA
+            val maxLat = latitude + WidgetConstants.BOUNDING_BOX_LAT_DELTA
+            val minLng = longitude - WidgetConstants.BOUNDING_BOX_LNG_DELTA
+            val maxLng = longitude + WidgetConstants.BOUNDING_BOX_LNG_DELTA
 
             try {
                 val jsonStr = context.assets
