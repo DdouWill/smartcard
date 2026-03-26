@@ -56,6 +56,16 @@ object WidgetMatchHelper {
         }
         Log.d(TAG, "匹配卡片數: ${matchedCards.size}")
 
+        // 依品牌最近門市距離排序（近→遠）
+        val sortedMatchedCards = if (matchedCards.size > 1) {
+            matchedCards.sortedBy { card ->
+                val storeName = card.optString("storeName", "")
+                findMinDistanceForBrand(context, latitude, longitude, storeName)
+            }
+        } else {
+            matchedCards
+        }
+
         // 找最近品牌（用於 analytics 和 nearest_store_text）
         val cardBrands = cards.map { it.optString("storeName", "") }.filter { it.isNotEmpty() }.toSet()
         val nearestBrand = findNearestBrand(context, latitude, longitude, cardBrands)
@@ -114,9 +124,9 @@ object WidgetMatchHelper {
 
             else -> {
                 editor.putString("widget_mode", "multipleCards")
-                editor.putString("widget_title", "附近 ${matchedCards.size} 家店")
+                editor.putString("widget_title", "附近 ${sortedMatchedCards.size} 家店")
 
-                val displayCards = matchedCards.take(10)
+                val displayCards = sortedMatchedCards.take(10)
                 editor.putInt("card_count", displayCards.size)
 
                 for (i in 0 until 10) {
@@ -291,6 +301,52 @@ object WidgetMatchHelper {
     // ──────────────────────────────────────────
     // 工具方法
     // ──────────────────────────────────────────
+
+    /**
+     * 取得某品牌（storeName）在 store_locations.json 中距離最近的門市距離（公尺）。
+     * 若找不到對應品牌則回傳 Float.MAX_VALUE。
+     */
+    private fun findMinDistanceForBrand(
+        context: Context,
+        latitude: Double,
+        longitude: Double,
+        storeName: String
+    ): Float {
+        var minDistance = Float.MAX_VALUE
+        try {
+            val jsonStr = context.assets
+                .open("flutter_assets/lib/data/store_locations.json")
+                .bufferedReader()
+                .use { it.readText() }
+
+            val root = JSONObject(jsonStr)
+            val storesObj = root.getJSONObject("stores")
+            val brandKeys = storesObj.keys()
+
+            while (brandKeys.hasNext()) {
+                val brand = brandKeys.next()
+                if (!storeName.contains(brand, ignoreCase = true)) continue
+
+                val brandObj = storesObj.getJSONObject(brand)
+                val locations = brandObj.getJSONArray("locations")
+
+                for (i in 0 until locations.length()) {
+                    val loc = locations.getJSONObject(i)
+                    val lat = loc.optDouble("lat", Double.NaN)
+                    val lng = loc.optDouble("lng", Double.NaN)
+                    if (lat.isNaN() || lng.isNaN()) continue
+
+                    val distance = calculateDistance(latitude, longitude, lat, lng)
+                    if (distance < minDistance) {
+                        minDistance = distance
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "findMinDistanceForBrand 失敗: $e")
+        }
+        return minDistance
+    }
 
     private fun calculateDistance(
         lat1: Double, lng1: Double,
