@@ -227,17 +227,29 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
             val clickIntent = createOpenAppIntent(context, cardId)
             views.setOnClickPendingIntent(R.id.widget_barcode_image, clickIntent)
         } else {
-            // 空狀態
             views.setViewVisibility(R.id.widget_top_bar, View.GONE)
             views.setViewVisibility(R.id.widget_barcode_image, View.GONE)
             views.setViewVisibility(R.id.widget_empty_text, View.VISIBLE)
 
-            // 最近門市提示
-            val nearestText = widgetData.getString("nearest_store_text", "") ?: ""
-            if (nearestText.isNotEmpty()) {
-                views.setViewVisibility(R.id.widget_nearest_text, View.VISIBLE)
-                views.setTextViewText(R.id.widget_nearest_text, "📍 最近：$nearestText")
+            val hasCards = widgetData.getInt("card_count", 0) > 0
+
+            if (hasCards) {
+                // 有卡但無匹配門市
+                views.setTextViewText(R.id.widget_empty_text, "附近無符合店家")
+                views.setTextColor(R.id.widget_empty_text, android.graphics.Color.parseColor("#616161"))
+
+                // 最近門市提示
+                val nearestText = widgetData.getString("nearest_store_text", "") ?: ""
+                if (nearestText.isNotEmpty()) {
+                    views.setViewVisibility(R.id.widget_nearest_text, View.VISIBLE)
+                    views.setTextViewText(R.id.widget_nearest_text, "📍 最近：$nearestText")
+                } else {
+                    views.setViewVisibility(R.id.widget_nearest_text, View.GONE)
+                }
             } else {
+                // 空狀態：無卡片
+                views.setTextViewText(R.id.widget_empty_text, "點擊新增會員卡")
+                views.setTextColor(R.id.widget_empty_text, android.graphics.Color.parseColor("#90A4AE"))
                 views.setViewVisibility(R.id.widget_nearest_text, View.GONE)
             }
 
@@ -301,7 +313,7 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
         views.setViewVisibility(R.id.widget_arrow_up, View.VISIBLE)
         views.setViewVisibility(R.id.widget_arrow_down, View.VISIBLE)
         views.setViewVisibility(R.id.widget_stack_page, View.VISIBLE)
-        views.setTextViewText(R.id.widget_stack_page, "${cardCount} 張卡片")
+        views.setTextViewText(R.id.widget_stack_page, "${cardCount} 張匹配")
 
         // 箭頭顏色（初始：第一張，▲ 亮可往上滑看下一張，▼ 暗）
         val enabledColor = android.graphics.Color.parseColor("#1565C0")

@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.core.content.ContextCompat
@@ -12,6 +13,8 @@ import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingRequest
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.analytics.FirebaseAnalytics
+import es.antonborri.home_widget.HomeWidgetPlugin
+import org.json.JSONArray
 import org.json.JSONObject
 
 /**
@@ -27,10 +30,14 @@ class GeofenceManager {
         private const val PREFS_NAME = "geofence_prefs"
         private const val KEY_LAST_LAT = "geofence_last_lat"
         private const val KEY_LAST_LNG = "geofence_last_lng"
-        private const val GEOFENCE_RADIUS = 200f // 公尺
+        private const val GEOFENCE_RADIUS = 200f // 公尺（觸發半徑）
+        private const val GEOFENCE_SEARCH_RADIUS = 3000f // 公尺（搜索半徑 3km）
         private const val MAX_GEOFENCES = 80
         private const val GEOFENCE_EXPIRATION = Geofence.NEVER_EXPIRE
         private const val REQUEST_CODE_GEOFENCE = 8002
+        private const val KEY_CARD_LIST = WidgetConstants.KEY_CARD_LIST
+        private const val BOUNDING_BOX_LAT_DELTA = WidgetConstants.BOUNDING_BOX_LAT_DELTA
+        private const val BOUNDING_BOX_LNG_DELTA = WidgetConstants.BOUNDING_BOX_LNG_DELTA
 
         /**
          * 註冊最近 80 間門市的 geofence
@@ -47,14 +54,35 @@ class GeofenceManager {
                 return
             }
 
+            // Android 版本判斷 + 背景定位權限檢查
+            Log.d(TAG, "SDK version: ${Build.VERSION.SDK_INT}, " +
+                "ACCESS_FINE_LOCATION: ${hasPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION)}, " +
+                "ACCESS_BACKGROUND_LOCATION: ${hasPermission(context, android.Manifest.permission.ACCESS_BACKGROUND_LOCATION)}")
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                if (!hasPermission(context, android.Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
+                    Log.w(TAG, "Android 10+ 需要 ACCESS_BACKGROUND_LOCATION 權限才能正常觸發 geofence，" +
+                        "目前缺少此權限，geofence 可能無法在背景觸發")
+                }
+            }
+
             // 儲存目前位置供重新註冊使用
             saveLastLocation(context, latitude, longitude)
 
-            val stores = loadNearbyStores(context, latitude, longitude)
+            // 讀取使用者有卡品牌
+            val userBrands = loadUserBrands(context)
+            Log.d(TAG, "使用者有卡品牌: $userBrands")
+
+            val filterResult = loadNearbyStores(context, latitude, longitude, userBrands)
+            val stores = filterResult.stores
             if (stores.isEmpty()) {
                 Log.d(TAG, "附近無門市，跳過 geofence 註冊")
                 return
             }
+
+            Log.d(TAG, "過濾前候選門市: ${filterResult.totalCandidates}, " +
+                "過濾後候選門市: ${filterResult.filteredCandidates}, " +
+                "最終註冊數: ${stores.size}")
 
             val geofenceList = stores.map { store ->
                 Geofence.Builder()
@@ -87,6 +115,9 @@ class GeofenceManager {
                                     "geofence_registered",
                                     Bundle().apply {
                                         putInt("count", geofenceList.size)
+                                        putString("filtered_brands", userBrands.joinToString(","))
+                                        putInt("total_candidates", filterResult.totalCandidates)
+                                        putInt("filtered_candidates", filterResult.filteredCandidates)
                                     }
                                 )
                             } catch (_: Exception) {}
@@ -138,12 +169,12 @@ class GeofenceManager {
         // ──────────────────────────────────────────
 
         private fun hasLocationPermission(context: Context): Boolean {
-            return ContextCompat.checkSelfPermission(
-                context, android.Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(
-                context, android.Manifest.permission.ACCESS_COARSE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
+            return hasPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION) ||
+                hasPermission(context, android.Manifest.permission.ACCESS_COARSE_LOCATION)
+        }
+
+        private fun hasPermission(context: Context, permission: String): Boolean {
+            return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
         }
 
         private fun getGeofencePendingIntent(context: Context): PendingIntent {
@@ -165,14 +196,46 @@ class GeofenceManager {
         }
 
         /**
-         * 從 store_locations.json 讀取門市，計算距離並回傳最近的 80 間
+         * 從 HomeWidget SharedPreferences 讀取 native_card_list，
+         * 解析使用者有卡的品牌名稱（storeName 欄位）
+         */
+        private fun loadUserBrands(context: Context): Set<String> {
+            return try {
+                val widgetData = HomeWidgetPlugin.getData(context)
+                val jsonStr = widgetData.getString(KEY_CARD_LIST, null)
+                    ?: return emptySet()
+                val array = JSONArray(jsonStr)
+                (0 until array.length()).mapNotNull { i ->
+                    val storeName = array.getJSONObject(i).optString("storeName", "")
+                    storeName.ifEmpty { null }
+                }.toSet()
+            } catch (e: Exception) {
+                Log.e(TAG, "讀取 native_card_list 失敗: $e")
+                emptySet()
+            }
+        }
+
+        /**
+         * 從 store_locations.json 讀取門市，依品牌過濾 + 距離上限過濾，
+         * 回傳最近的 80 間及過濾統計資訊。
+         *
+         * @param userBrands 使用者有卡的品牌名稱；為空時 fallback 到全品牌搜索
          */
         private fun loadNearbyStores(
             context: Context,
             latitude: Double,
-            longitude: Double
-        ): List<StoreInfo> {
+            longitude: Double,
+            userBrands: Set<String>
+        ): FilterResult {
             val stores = mutableListOf<StoreInfo>()
+            var totalCandidates = 0
+            var totalLocations = 0
+
+            // bounding box 粗篩邊界
+            val minLat = latitude - BOUNDING_BOX_LAT_DELTA
+            val maxLat = latitude + BOUNDING_BOX_LAT_DELTA
+            val minLng = longitude - BOUNDING_BOX_LNG_DELTA
+            val maxLng = longitude + BOUNDING_BOX_LNG_DELTA
 
             try {
                 val jsonStr = context.assets
@@ -195,7 +258,27 @@ class GeofenceManager {
                         val lng = loc.optDouble("lng", Double.NaN)
                         if (lat.isNaN() || lng.isNaN()) continue
 
+                        totalLocations++
+
+                        // bounding box 粗篩：跳過明顯超出範圍的門市
+                        if (lat !in minLat..maxLat || lng !in minLng..maxLng) continue
+
                         val distance = calculateDistance(latitude, longitude, lat, lng)
+
+                        // 距離上限過濾：超過搜索半徑的不加入候選
+                        if (distance > GEOFENCE_SEARCH_RADIUS) continue
+
+                        totalCandidates++
+
+                        // 品牌過濾：只加入使用者有卡的品牌門市
+                        // userBrands 為空時 fallback 到全品牌搜索
+                        if (userBrands.isNotEmpty()) {
+                            val matchesBrand = userBrands.any { storeName ->
+                                storeName.contains(brand, ignoreCase = true)
+                            }
+                            if (!matchesBrand) continue
+                        }
+
                         stores.add(
                             StoreInfo(
                                 requestId = "${brand}_$i",
@@ -208,11 +291,19 @@ class GeofenceManager {
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "讀取 store_locations.json 失敗: $e")
-                return emptyList()
+                return FilterResult(emptyList(), 0, 0)
             }
 
+            val filteredCandidates = stores.size
+
+            Log.d(TAG, "粗篩: 全量門市=$totalLocations, 距離篩後=$totalCandidates, 品牌過濾後=$filteredCandidates")
+
             // 按距離排序，取最近 80 間
-            return stores.sortedBy { it.distance }.take(MAX_GEOFENCES)
+            return FilterResult(
+                stores = stores.sortedBy { it.distance }.take(MAX_GEOFENCES),
+                totalCandidates = totalCandidates,
+                filteredCandidates = filteredCandidates
+            )
         }
 
         /**
@@ -233,5 +324,11 @@ class GeofenceManager {
         val lat: Double,
         val lng: Double,
         val distance: Float
+    )
+
+    private data class FilterResult(
+        val stores: List<StoreInfo>,
+        val totalCandidates: Int,
+        val filteredCandidates: Int
     )
 }
