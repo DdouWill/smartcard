@@ -10,3 +10,4 @@ pubspec.lock
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 lib/firebase_options.dart
+tools/update_stores.py
