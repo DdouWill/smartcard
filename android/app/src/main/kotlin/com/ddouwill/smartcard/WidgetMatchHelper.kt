@@ -158,10 +158,11 @@ object WidgetMatchHelper {
         }
 
         // 額外寫入匹配資訊，供 Flutter 端讀取（統一匹配邏輯）
+        // 全部用 putString 存，避免 home_widget plugin 的 getLong/getFloat 型別不匹配
         editor.putString("match_trigger", trigger)
-        editor.putLong("match_timestamp", System.currentTimeMillis())
-        editor.putFloat("match_lat", latitude.toFloat())
-        editor.putFloat("match_lng", longitude.toFloat())
+        editor.putString("match_timestamp", System.currentTimeMillis().toString())
+        editor.putString("match_lat", latitude.toString())
+        editor.putString("match_lng", longitude.toString())
 
         // matched_brands: JSON array string
         val matchedBrandNames = sortedMatchedCards.map { it.optString("storeName", "") }
@@ -170,10 +171,10 @@ object WidgetMatchHelper {
         // nearest brand info
         if (nearestBrand != null) {
             editor.putString("nearest_brand_name", nearestBrand.brand)
-            editor.putFloat("nearest_brand_distance", nearestBrand.distance)
+            editor.putString("nearest_brand_distance", nearestBrand.distance.toString())
         } else {
             editor.putString("nearest_brand_name", "")
-            editor.putFloat("nearest_brand_distance", -1f)
+            editor.putString("nearest_brand_distance", "-1")
         }
 
         editor.apply()

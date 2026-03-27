@@ -155,7 +155,7 @@ class LocationService {
         // Step 2b：觸發 Kotlin 端匹配，再讀取結果
         await _triggerKotlinMatch(pos.latitude, pos.longitude);
         final kotlinResult = await _readKotlinMatchResult(allCards, pos);
-        if (kotlinResult != null) {
+        if (kotlinResult != null && kotlinResult.hasMatches) {
           if (kEnableDebugLog) {
             debugPrint('[Location] 使用 Kotlin 端匹配結果: matched=${kotlinResult.matchedCards.length}');
           }
@@ -176,11 +176,14 @@ class LocationService {
 
     // ── Step 3：無符合 → 找最近門市作為提示 ──
     NearestStoreInfo? nearest;
+    // 記錄 Step 2 是否已取得座標並跑過 GPS 匹配
+    final bool gpsAttempted = pos != null && enableGps;
     // 若 Step 2 未取得座標（冷啟動），再嘗試一次
     pos ??= await getCurrentPosition();
     if (pos != null) {
       // 冷啟動情境：Step 2 拿不到座標但現在拿到了，補跑 GPS 匹配
-      if (enableGps) {
+      // 如果 Step 2 已經跑過就跳過，避免重複執行
+      if (enableGps && !gpsAttempted) {
         // 先試自訂 zones
         final customRetry = await _matchByCustomGpsZones(allCards, pos);
         if (customRetry.hasMatches) {
@@ -273,7 +276,10 @@ class LocationService {
       if (defaultTargetPlatform != TargetPlatform.android) return null;
 
       // 檢查 timestamp 是否在有效範圍內
-      final timestamp = await HomeWidget.getWidgetData<int>('match_timestamp');
+      // Kotlin 端用 putString 存所有數值，避免 home_widget 的 getLong/getFloat 型別不匹配
+      final timestampStr = await HomeWidget.getWidgetData<String>('match_timestamp');
+      if (timestampStr == null) return null;
+      final timestamp = int.tryParse(timestampStr);
       if (timestamp == null) return null;
 
       final matchTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
@@ -333,15 +339,18 @@ class LocationService {
       if (defaultTargetPlatform != TargetPlatform.android) return null;
 
       final nearestName = await HomeWidget.getWidgetData<String>('nearest_brand_name');
-      final nearestDistance = await HomeWidget.getWidgetData<double>('nearest_brand_distance');
+      final nearestDistStr = await HomeWidget.getWidgetData<String>('nearest_brand_distance');
+      final nearestDistance = nearestDistStr != null ? double.tryParse(nearestDistStr) : null;
 
       if (nearestName == null || nearestName.isEmpty || nearestDistance == null || nearestDistance < 0) {
         return null;
       }
 
       // 建構 NearestStoreInfo（zone 用 match_lat/lng 近似）
-      final lat = await HomeWidget.getWidgetData<double>('match_lat');
-      final lng = await HomeWidget.getWidgetData<double>('match_lng');
+      final latStr = await HomeWidget.getWidgetData<String>('match_lat');
+      final lngStr = await HomeWidget.getWidgetData<String>('match_lng');
+      final lat = latStr != null ? double.tryParse(latStr) : null;
+      final lng = lngStr != null ? double.tryParse(lngStr) : null;
 
       return NearestStoreInfo(
         brandName: nearestName,
