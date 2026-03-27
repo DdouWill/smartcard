@@ -26,9 +26,13 @@ class SmartCardWidgetFactory(private val context: Context) : RemoteViewsService.
         } else {
             if (prefs.getString("primary_barcode_value", null) != null) 1 else 0
         }
-        // < 4 張時填充到 4 張，讓 StackView 堆疊效果飽滿
-        cardCount = if (actualCardCount in 1..3) {
-            4
+        // 填充邏輯：倍數填充避免 loop 時重複卡片相鄰
+        // 1 張 → 不填充（走 singleCard）
+        // 2 張 → 填充到 4 張 (0,1,0,1)
+        // 3 張 → 填充到 6 張 (0,1,2,0,1,2)
+        // 4+ 張 → 不填充
+        cardCount = if (actualCardCount in 2..3) {
+            actualCardCount * 2
         } else {
             actualCardCount
         }
