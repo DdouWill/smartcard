@@ -73,8 +73,24 @@ object WidgetMatchHelper {
         val widgetData = HomeWidgetPlugin.getData(context)
         val editor = widgetData.edit()
 
-        // 重設導航索引
-        editor.putInt("widget_current_index", 0)
+        // 計算新的 mode 和 card count
+        val oldMode = widgetData.getString("widget_mode", "") ?: ""
+        val oldCardCount = widgetData.getInt("card_count", 0)
+        val newMode = when {
+            sortedMatchedCards.isEmpty() -> "noMatch"
+            sortedMatchedCards.size == 1 -> "singleCard"
+            else -> "multipleCards"
+        }
+        val newCardCount = when {
+            sortedMatchedCards.isEmpty() -> cards.size
+            sortedMatchedCards.size == 1 -> 1
+            else -> sortedMatchedCards.take(10).size
+        }
+
+        // 只在卡片組合改變時重設 index，避免背景更新導致 StackView 跳位
+        if (oldMode != newMode || oldCardCount != newCardCount) {
+            editor.putInt("widget_current_index", 0)
+        }
 
         when {
             sortedMatchedCards.isEmpty() -> {
