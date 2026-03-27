@@ -180,7 +180,7 @@ object WidgetMatchHelper {
         editor.apply()
 
         // 5. 通知 widget 更新
-        SmartCardWidgetProvider.updateAllWidgets(context)
+        SmartCardWidgetProvider.updateAllWidgets(context, force = (trigger == "app"))
 
         // Firebase Analytics
         logMatchResult(context, sortedMatchedCards, nearestBrand)
