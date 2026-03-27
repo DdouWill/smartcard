@@ -2,10 +2,12 @@
 // 實作 WiFi SSID 偵測 + GPS 地理圍欄邏輯
 // 依照 SPEC.md 的三步驟定位引擎：WiFi → GPS → 空清單
 
+import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart'; // 導入 MethodChannel
 import 'package:geolocator/geolocator.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -49,6 +51,10 @@ class LocationService {
 
   final NetworkInfo _networkInfo = NetworkInfo();
   static const _channel = MethodChannel('com.ddouwill.smartcard/location_service');
+  static const _locationChannel = MethodChannel('com.ddouwill.smartcard/location');
+
+  /// Kotlin 端匹配結果的有效時間（5 分鐘）
+  static const _kotlinMatchMaxAge = Duration(minutes: 5);
 
   // ──────────────────────────────────────────
   // 啟動 / 停止 背景服務
@@ -129,8 +135,8 @@ class LocationService {
       }
     }
 
-    // ── Step 2：GPS 地理圍欄比對 ──
-    // 集中取得 GPS 座標，避免冷啟動時重複呼叫導致第一次 null、第二次才就緒的問題
+    // ── Step 2：GPS 匹配 ──
+    // 先檢查使用者自訂 gpsZones（優先級最高），再嘗試讀取 Kotlin 端統一匹配結果
     Position? pos;
     if (enableGps) {
       pos = await getCurrentPosition();
@@ -138,6 +144,28 @@ class LocationService {
         debugPrint('[Location] GPS: ${pos.latitude}, ${pos.longitude}');
       }
       if (pos != null) {
+        // Step 2a：自訂 gpsZones 匹配（優先）
+        final customGpsResult = await _matchByCustomGpsZones(allCards, pos);
+        if (customGpsResult.hasMatches) {
+          // 同時觸發 Kotlin 端匹配（讓 Widget 保持同步）
+          _triggerKotlinMatch(pos.latitude, pos.longitude);
+          return _updateLastResult(customGpsResult);
+        }
+
+        // Step 2b：觸發 Kotlin 端匹配，再讀取結果
+        await _triggerKotlinMatch(pos.latitude, pos.longitude);
+        final kotlinResult = await _readKotlinMatchResult(allCards, pos);
+        if (kotlinResult != null) {
+          if (kEnableDebugLog) {
+            debugPrint('[Location] 使用 Kotlin 端匹配結果: matched=${kotlinResult.matchedCards.length}');
+          }
+          return _updateLastResult(kotlinResult);
+        }
+
+        // Step 2c：Fallback — Kotlin 結果不可用時，用 Flutter 端匹配
+        if (kEnableDebugLog) {
+          debugPrint('[Location] Kotlin 結果不可用，fallback 到 Flutter 匹配');
+        }
         final gpsResult = await _matchByGps(allCards, pos);
         if (gpsResult.hasMatches) {
           result = gpsResult;
@@ -153,21 +181,43 @@ class LocationService {
     if (pos != null) {
       // 冷啟動情境：Step 2 拿不到座標但現在拿到了，補跑 GPS 匹配
       if (enableGps) {
+        // 先試自訂 zones
+        final customRetry = await _matchByCustomGpsZones(allCards, pos);
+        if (customRetry.hasMatches) {
+          _triggerKotlinMatch(pos.latitude, pos.longitude);
+          return _updateLastResult(customRetry);
+        }
+
+        // 觸發 Kotlin 端匹配
+        await _triggerKotlinMatch(pos.latitude, pos.longitude);
+        final kotlinRetry = await _readKotlinMatchResult(allCards, pos);
+        if (kotlinRetry != null && kotlinRetry.hasMatches) {
+          return _updateLastResult(kotlinRetry);
+        }
+
+        // Fallback
         final retryGpsResult = await _matchByGps(allCards, pos);
         if (retryGpsResult.hasMatches) {
           return _updateLastResult(retryGpsResult);
         }
       }
-      // 只搜尋使用者有卡片的品牌（透過 resolveStoreName 正規化）
-      final storeService = StoreLocationService();
-      final userBrands = allCards
-          .map((c) => storeService.resolveStoreName(c.storeName))
-          .toSet();
-      nearest = await storeService.findNearestStore(
-        userLat: pos.latitude,
-        userLng: pos.longitude,
-        brandFilter: userBrands,
-      );
+
+      // 讀取 Kotlin 端的 nearest brand 資訊
+      nearest = await _readKotlinNearestStore(allCards);
+
+      // Fallback：Kotlin 無結果時用 Flutter 端找最近門市
+      if (nearest == null) {
+        final storeService = StoreLocationService();
+        final userBrands = allCards
+            .map((c) => storeService.resolveStoreName(c.storeName))
+            .toSet();
+        nearest = await storeService.findNearestStore(
+          userLat: pos.latitude,
+          userLng: pos.longitude,
+          brandFilter: userBrands,
+        );
+      }
+
       if (kEnableDebugLog) {
         if (nearest != null) {
           debugPrint('[Location] Nearest: ${nearest.brandName} @ ${nearest.distanceMeters.toStringAsFixed(0)}m');
@@ -190,6 +240,149 @@ class LocationService {
     _lastResult = result;
     _lastUpdateTime = DateTime.now();
     return result;
+  }
+
+  // ──────────────────────────────────────────
+  // Kotlin 端匹配結果讀取
+  // ──────────────────────────────────────────
+
+  /// 透過 MethodChannel 觸發 Kotlin 端執行匹配
+  Future<void> _triggerKotlinMatch(double latitude, double longitude) async {
+    try {
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        await _locationChannel.invokeMethod('triggerMatch', {
+          'latitude': latitude,
+          'longitude': longitude,
+        });
+      }
+    } catch (e) {
+      if (kEnableDebugLog) {
+        debugPrint('[Location] triggerKotlinMatch 失敗: $e');
+      }
+    }
+  }
+
+  /// 讀取 Kotlin 端寫入的匹配結果（SharedPreferences）
+  ///
+  /// 回傳 null 表示結果不可用（過期、不存在、或平台不支援）
+  Future<LocationResult?> _readKotlinMatchResult(
+    List<MemberCard> allCards,
+    Position position,
+  ) async {
+    try {
+      if (defaultTargetPlatform != TargetPlatform.android) return null;
+
+      // 檢查 timestamp 是否在有效範圍內
+      final timestamp = await HomeWidget.getWidgetData<int>('match_timestamp');
+      if (timestamp == null) return null;
+
+      final matchTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+      if (DateTime.now().difference(matchTime) > _kotlinMatchMaxAge) {
+        if (kEnableDebugLog) {
+          debugPrint('[Location] Kotlin 匹配結果已過期 (${DateTime.now().difference(matchTime).inSeconds}s ago)');
+        }
+        return null;
+      }
+
+      // 讀取匹配到的品牌清單
+      final matchedBrandsJson = await HomeWidget.getWidgetData<String>('matched_brands');
+      if (matchedBrandsJson == null) return null;
+
+      final List<dynamic> matchedBrandNames = json.decode(matchedBrandsJson);
+
+      if (matchedBrandNames.isEmpty) {
+        // Kotlin 端判定 noMatch — 讀取 nearest store 資訊
+        final nearestStore = await _readKotlinNearestStore(allCards);
+        return LocationResult(
+          matchedCards: [],
+          trigger: LocationTrigger.gps,
+          currentPosition: position,
+          nearestStore: nearestStore,
+        );
+      }
+
+      // 將品牌名稱對應到使用者的 MemberCard
+      final List<MemberCard> matchedCards = [];
+      for (final brandName in matchedBrandNames) {
+        final name = brandName as String;
+        if (name.isEmpty) continue;
+        for (final card in allCards) {
+          if (card.storeName == name && !matchedCards.contains(card)) {
+            matchedCards.add(card);
+            break;
+          }
+        }
+      }
+
+      return LocationResult(
+        matchedCards: matchedCards,
+        trigger: LocationTrigger.gps,
+        currentPosition: position,
+      );
+    } catch (e) {
+      if (kEnableDebugLog) {
+        debugPrint('[Location] 讀取 Kotlin 匹配結果失敗: $e');
+      }
+      return null;
+    }
+  }
+
+  /// 從 Kotlin 端的 SharedPreferences 讀取最近門市資訊
+  Future<NearestStoreInfo?> _readKotlinNearestStore(List<MemberCard> allCards) async {
+    try {
+      if (defaultTargetPlatform != TargetPlatform.android) return null;
+
+      final nearestName = await HomeWidget.getWidgetData<String>('nearest_brand_name');
+      final nearestDistance = await HomeWidget.getWidgetData<double>('nearest_brand_distance');
+
+      if (nearestName == null || nearestName.isEmpty || nearestDistance == null || nearestDistance < 0) {
+        return null;
+      }
+
+      // 建構 NearestStoreInfo（zone 用 match_lat/lng 近似）
+      final lat = await HomeWidget.getWidgetData<double>('match_lat');
+      final lng = await HomeWidget.getWidgetData<double>('match_lng');
+
+      return NearestStoreInfo(
+        brandName: nearestName,
+        distanceMeters: nearestDistance,
+        zone: GpsZone(
+          latitude: lat ?? 0,
+          longitude: lng ?? 0,
+        ),
+      );
+    } catch (e) {
+      if (kEnableDebugLog) {
+        debugPrint('[Location] 讀取 Kotlin nearest store 失敗: $e');
+      }
+      return null;
+    }
+  }
+
+  /// 只匹配使用者自訂的 gpsZones（不查 store_locations.json）
+  Future<LocationResult> _matchByCustomGpsZones(
+    List<MemberCard> allCards,
+    Position position,
+  ) async {
+    final List<MemberCard> matched = [];
+
+    for (final card in allCards) {
+      if (card.gpsZones.isEmpty) continue;
+      for (final zone in card.gpsZones) {
+        final dist = calculateDistance(
+            position.latitude, position.longitude, zone.latitude, zone.longitude);
+        if (dist <= zone.radiusMeters) {
+          matched.add(card);
+          break;
+        }
+      }
+    }
+
+    return LocationResult(
+      matchedCards: matched,
+      trigger: LocationTrigger.gps,
+      currentPosition: position,
+    );
   }
 
   // ──────────────────────────────────────────

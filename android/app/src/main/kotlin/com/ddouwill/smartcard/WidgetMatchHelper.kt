@@ -39,8 +39,8 @@ object WidgetMatchHelper {
      * 4. 匹配結果寫入 widget SharedPreferences（與 Flutter WidgetService 格式一致）
      * 5. 呼叫 SmartCardWidgetProvider.updateAllWidgets()
      */
-    fun matchAndUpdateWidget(context: Context, latitude: Double, longitude: Double) {
-        Log.d(TAG, "開始匹配 (lat=$latitude, lng=$longitude)")
+    fun matchAndUpdateWidget(context: Context, latitude: Double, longitude: Double, trigger: String = "geofence") {
+        Log.d(TAG, "開始匹配 (lat=$latitude, lng=$longitude, trigger=$trigger)")
 
         // 粗篩：bounding box 5km 子集快取
         val storesObj = getFilteredStores(context, latitude, longitude) ?: return
@@ -155,6 +155,25 @@ object WidgetMatchHelper {
                 }
                 editor.putString("nearest_store_text", "")
             }
+        }
+
+        // 額外寫入匹配資訊，供 Flutter 端讀取（統一匹配邏輯）
+        editor.putString("match_trigger", trigger)
+        editor.putLong("match_timestamp", System.currentTimeMillis())
+        editor.putFloat("match_lat", latitude.toFloat())
+        editor.putFloat("match_lng", longitude.toFloat())
+
+        // matched_brands: JSON array string
+        val matchedBrandNames = sortedMatchedCards.map { it.optString("storeName", "") }
+        editor.putString("matched_brands", JSONArray(matchedBrandNames).toString())
+
+        // nearest brand info
+        if (nearestBrand != null) {
+            editor.putString("nearest_brand_name", nearestBrand.brand)
+            editor.putFloat("nearest_brand_distance", nearestBrand.distance)
+        } else {
+            editor.putString("nearest_brand_name", "")
+            editor.putFloat("nearest_brand_distance", -1f)
         }
 
         editor.apply()
