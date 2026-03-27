@@ -192,9 +192,18 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
 
         appWidgetManager.updateAppWidget(appWidgetId, views)
 
-        // 多卡模式時通知 StackView 資料已更新
+        // 多卡模式時通知 StackView 資料已更新，並恢復卡片位置
         if (displayMode == MODE_MULTIPLE_CARDS) {
             appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_stack_view)
+
+            // notifyAppWidgetViewDataChanged 會導致 StackView reset，
+            // 用 partiallyUpdateAppWidget + setDisplayedChild 恢復位置
+            val cardCount = widgetData.getInt("card_count", 0)
+            val savedIndex = widgetData.getInt("widget_current_index", 0)
+            val clampedIndex = savedIndex.coerceIn(0, (cardCount - 1).coerceAtLeast(0))
+            val restoreViews = RemoteViews(context.packageName, R.layout.smart_card_widget)
+            restoreViews.setDisplayedChild(R.id.widget_stack_view, clampedIndex)
+            appWidgetManager.partiallyUpdateAppWidget(appWidgetId, restoreViews)
         }
     }
 
@@ -343,6 +352,11 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
 
         // 設定空 View（StackView 沒資料時顯示）
         views.setEmptyView(R.id.widget_stack_view, R.id.widget_empty_text)
+
+        // 恢復 StackView 到上次的卡片位置（避免背景更新後跳位）
+        val savedIndex = widgetData.getInt("widget_current_index", 0)
+        val clampedIndex = savedIndex.coerceIn(0, (cardCount - 1).coerceAtLeast(0))
+        views.setDisplayedChild(R.id.widget_stack_view, clampedIndex)
     }
 
     // ──────────────────────────────────────────

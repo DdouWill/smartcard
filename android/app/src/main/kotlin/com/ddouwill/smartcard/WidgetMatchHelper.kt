@@ -39,8 +39,8 @@ object WidgetMatchHelper {
      * 4. 匹配結果寫入 widget SharedPreferences（與 Flutter WidgetService 格式一致）
      * 5. 呼叫 SmartCardWidgetProvider.updateAllWidgets()
      */
-    fun matchAndUpdateWidget(context: Context, latitude: Double, longitude: Double) {
-        Log.d(TAG, "開始匹配 (lat=$latitude, lng=$longitude)")
+    fun matchAndUpdateWidget(context: Context, latitude: Double, longitude: Double, trigger: String = "geofence") {
+        Log.d(TAG, "開始匹配 (lat=$latitude, lng=$longitude, trigger=$trigger)")
 
         // 粗篩：bounding box 5km 子集快取
         val storesObj = getFilteredStores(context, latitude, longitude) ?: return
@@ -73,8 +73,24 @@ object WidgetMatchHelper {
         val widgetData = HomeWidgetPlugin.getData(context)
         val editor = widgetData.edit()
 
-        // 重設導航索引
-        editor.putInt("widget_current_index", 0)
+        // 計算新的 mode 和 card count
+        val oldMode = widgetData.getString("widget_mode", "") ?: ""
+        val oldCardCount = widgetData.getInt("card_count", 0)
+        val newMode = when {
+            sortedMatchedCards.isEmpty() -> "noMatch"
+            sortedMatchedCards.size == 1 -> "singleCard"
+            else -> "multipleCards"
+        }
+        val newCardCount = when {
+            sortedMatchedCards.isEmpty() -> cards.size
+            sortedMatchedCards.size == 1 -> 1
+            else -> sortedMatchedCards.take(10).size
+        }
+
+        // 只在卡片組合改變時重設 index，避免背景更新導致 StackView 跳位
+        if (oldMode != newMode || oldCardCount != newCardCount) {
+            editor.putInt("widget_current_index", 0)
+        }
 
         when {
             sortedMatchedCards.isEmpty() -> {
@@ -139,6 +155,26 @@ object WidgetMatchHelper {
                 }
                 editor.putString("nearest_store_text", "")
             }
+        }
+
+        // 額外寫入匹配資訊，供 Flutter 端讀取（統一匹配邏輯）
+        // 全部用 putString 存，避免 home_widget plugin 的 getLong/getFloat 型別不匹配
+        editor.putString("match_trigger", trigger)
+        editor.putString("match_timestamp", System.currentTimeMillis().toString())
+        editor.putString("match_lat", latitude.toString())
+        editor.putString("match_lng", longitude.toString())
+
+        // matched_brands: JSON array string
+        val matchedBrandNames = sortedMatchedCards.map { it.optString("storeName", "") }
+        editor.putString("matched_brands", JSONArray(matchedBrandNames).toString())
+
+        // nearest brand info
+        if (nearestBrand != null) {
+            editor.putString("nearest_brand_name", nearestBrand.brand)
+            editor.putString("nearest_brand_distance", nearestBrand.distance.toString())
+        } else {
+            editor.putString("nearest_brand_name", "")
+            editor.putString("nearest_brand_distance", "-1")
         }
 
         editor.apply()

@@ -14,10 +14,11 @@ import io.flutter.plugin.common.MethodChannel
  */
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.ddouwill.smartcard/location_service"
+    private val LOCATION_CHANNEL = "com.ddouwill.smartcard/location"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "startLocationService" -> {
@@ -27,6 +28,24 @@ class MainActivity : FlutterActivity() {
                 "stopLocationService" -> {
                     stopLocationService()
                     result.success(null)
+                }
+                else -> {
+                    result.notImplemented()
+                }
+            }
+        }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, LOCATION_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "triggerMatch" -> {
+                    val lat = call.argument<Double>("latitude")
+                    val lng = call.argument<Double>("longitude")
+                    if (lat != null && lng != null) {
+                        WidgetMatchHelper.matchAndUpdateWidget(this, lat, lng, "app")
+                        result.success(true)
+                    } else {
+                        result.error("INVALID_ARGS", "latitude and longitude are required", null)
+                    }
                 }
                 else -> {
                     result.notImplemented()

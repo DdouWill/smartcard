@@ -204,7 +204,7 @@ class WidgetUpdateAlarmReceiver : BroadcastReceiver() {
         }
 
         // 由 WidgetMatchHelper 執行匹配並更新 widget
-        WidgetMatchHelper.matchAndUpdateWidget(context, location.latitude, location.longitude)
+        WidgetMatchHelper.matchAndUpdateWidget(context, location.latitude, location.longitude, "alarm")
 
         // 統一排程下次：15 分鐘
         scheduleNextAlarm(context, INTERVAL_GEOFENCE_MAINTENANCE)
