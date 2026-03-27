@@ -36,6 +36,8 @@
 - **語言**：Dart + Kotlin（Widget / Geofence）
 - **最低版本**：Android 8.0 (API 26)
 - **Build**：compileSdk 36, AGP 8.7.3, Gradle 8.9
+- **iOS 支援**：開發中（需要 macOS + Xcode 進行 build）
+- **CI/CD**：Codemagic
 
 ## 授權
 
