@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartCard 隱私權政策 / Privacy Policy</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      line-height: 1.8;
+    }
+    .container {
+      max-width: 800px;
+      margin: 40px auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    header {
+      background: #1a73e8;
+      color: #fff;
+      padding: 36px 40px;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; }
+    header p { margin-top: 8px; font-size: 0.95rem; opacity: 0.85; }
+    .lang-switch {
+      display: flex;
+      gap: 12px;
+      padding: 16px 40px;
+      background: #e8f0fe;
+      border-bottom: 1px solid #d2e3fc;
+    }
+    .lang-btn {
+      padding: 6px 18px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .lang-btn.active { background: #1a73e8; color: #fff; }
+    .lang-btn:not(.active) { background: #fff; color: #1a73e8; border: 1px solid #1a73e8; }
+    .content { padding: 36px 40px; }
+    .lang-section { display: none; }
+    .lang-section.active { display: block; }
+    h2 {
+      font-size: 1.1rem;
+      color: #1a73e8;
+      margin: 28px 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #e8f0fe;
+    }
+    h3 {
+      font-size: 1rem;
+      color: #444;
+      margin: 16px 0 6px;
+    }
+    p { margin-bottom: 12px; font-size: 0.95rem; }
+    ul { padding-left: 20px; margin-bottom: 12px; }
+    li { margin-bottom: 6px; font-size: 0.95rem; }
+    .badge {
+      display: inline-block;
+      background: #e8f0fe;
+      color: #1a73e8;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 12px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+    .highlight {
+      background: #fff8e1;
+      border-left: 4px solid #fbbc04;
+      padding: 10px 16px;
+      border-radius: 4px;
+      margin: 10px 0;
+      font-size: 0.92rem;
+    }
+    footer {
+      text-align: center;
+      padding: 20px 40px;
+      font-size: 0.85rem;
+      color: #888;
+      border-top: 1px solid #eee;
+    }
+    a { color: #1a73e8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    @media (max-width: 600px) {
+      header, .content, .lang-switch, footer { padding-left: 20px; padding-right: 20px; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🪪 SmartCard</h1>
+    <p>隱私權政策 / Privacy Policy &nbsp;·&nbsp; 最後更新 / Last Updated：2026-04-01</p>
+  </header>
+
+  <div class="lang-switch">
+    <button class="lang-btn active" onclick="switchLang('zh')">繁體中文</button>
+    <button class="lang-btn" onclick="switchLang('en')">English</button>
+  </div>
+
+  <div class="content">
+
+    <!-- 中文版 -->
+    <div id="zh" class="lang-section active">
+
+      <h2>1. 簡介</h2>
+      <p>SmartCard（以下簡稱「本應用程式」）是一款協助您管理會員卡條碼、並自動偵測附近門市的 Android 應用程式。本隱私權政策說明我們如何收集、使用及保護您的個人資料。</p>
+
+      <h2>2. 收集的資料</h2>
+
+      <h3>2.1 位置資料（GPS）</h3>
+      <ul>
+        <li><strong>收集目的：</strong>偵測您附近的門市，自動顯示對應的會員卡條碼。</li>
+        <li><strong>收集方式：</strong>透過 Android 系統的精確位置（Fine Location）、概略位置（Coarse Location）及背景位置（Background Location）權限。</li>
+        <li><strong>儲存方式：</strong>位置資料<strong>不會上傳至任何伺服器</strong>，僅在裝置本地進行運算與比對。</li>
+        <li><strong>保留期限：</strong>位置快取暫存於裝置本地，可隨時透過清除應用程式資料移除。</li>
+      </ul>
+
+      <h3>2.2 會員卡資料</h3>
+      <ul>
+        <li><strong>收集內容：</strong>您手動輸入或掃描的會員卡名稱、條碼數值、條碼格式。</li>
+        <li><strong>儲存方式：</strong>所有會員卡資料以 AES-256 加密儲存於裝置本地，<strong>不會上傳至任何雲端服務</strong>。</li>
+        <li><strong>保留期限：</strong>資料保留至您主動刪除或解除安裝應用程式為止。</li>
+      </ul>
+
+      <h3>2.3 診斷與分析資料 <span class="badge">Firebase</span></h3>
+      <div class="highlight">以下資料由 Google Firebase 處理，適用 <a href="https://policies.google.com/privacy" target="_blank">Google 隱私權政策</a>。</div>
+      <ul>
+        <li><strong>Firebase Analytics：</strong>收集匿名的應用程式使用統計（功能使用頻率、工作階段長度）。不包含任何個人識別資訊。</li>
+        <li><strong>Firebase Crashlytics：</strong>收集應用程式崩潰報告（裝置型號、Android 版本、錯誤堆疊）。Debug 版本自動停用此功能。</li>
+      </ul>
+
+      <h2>3. 資料分享</h2>
+      <p>本應用程式<strong>不會</strong>將您的個人資料販售、出租或分享給第三方，以下情況除外：</p>
+      <ul>
+        <li>Firebase（僅限匿名診斷資料，如上述 2.3）</li>
+        <li>法律要求之情形</li>
+      </ul>
+
+      <h2>4. 資料安全</h2>
+      <ul>
+        <li>會員卡資料使用 AES-256-CBC 加密，金鑰透過 Android Keystore 保護。</li>
+        <li>位置資料僅於裝置本地處理，不經過任何外部網路傳輸。</li>
+      </ul>
+
+      <h2>5. 兒童隱私</h2>
+      <p>本應用程式不針對 13 歲以下兒童設計，亦不刻意收集兒童個人資料。</p>
+
+      <h2>6. 您的權利</h2>
+      <p>您可隨時：</p>
+      <ul>
+        <li>透過 Android 系統設定撤銷位置權限</li>
+        <li>在應用程式內刪除所有會員卡資料</li>
+        <li>解除安裝應用程式以移除所有本地資料</li>
+      </ul>
+
+      <h2>7. 政策變更</h2>
+      <p>若本政策有重大變更，將於 GitHub 頁面公告，並更新本文件的「最後更新日期」。</p>
+
+      <h2>8. 聯絡方式</h2>
+      <p>如有任何隱私相關問題，請透過 GitHub Issues 聯繫：<br>
+      <a href="https://github.com/DdouWill/smartcard/issues" target="_blank">https://github.com/DdouWill/smartcard/issues</a></p>
+
+    </div>
+
+    <!-- English Version -->
+    <div id="en" class="lang-section">
+
+      <h2>1. Introduction</h2>
+      <p>SmartCard is an Android application that helps you manage membership card barcodes and automatically detects nearby stores. This Privacy Policy explains how we collect, use, and protect your personal information.</p>
+
+      <h2>2. Information We Collect</h2>
+
+      <h3>2.1 Location Data (GPS)</h3>
+      <ul>
+        <li><strong>Purpose:</strong> To detect nearby stores and automatically display the relevant membership card barcode.</li>
+        <li><strong>Method:</strong> Via Android Fine Location, Coarse Location, and Background Location permissions.</li>
+        <li><strong>Storage:</strong> Location data is <strong>never uploaded to any server</strong>. All processing is done locally on your device.</li>
+        <li><strong>Retention:</strong> Location cache is stored locally and can be removed by clearing app data at any time.</li>
+      </ul>
+
+      <h3>2.2 Membership Card Data</h3>
+      <ul>
+        <li><strong>Content:</strong> Card names, barcode values, and barcode formats you enter or scan.</li>
+        <li><strong>Storage:</strong> All card data is encrypted with AES-256 and stored locally on your device. <strong>No data is uploaded to any cloud service.</strong></li>
+        <li><strong>Retention:</strong> Data is retained until you delete it or uninstall the app.</li>
+      </ul>
+
+      <h3>2.3 Diagnostic and Analytics Data <span class="badge">Firebase</span></h3>
+      <div class="highlight">The following data is processed by Google Firebase, subject to <a href="https://policies.google.com/privacy" target="_blank">Google's Privacy Policy</a>.</div>
+      <ul>
+        <li><strong>Firebase Analytics:</strong> Collects anonymous app usage statistics (feature usage frequency, session length). No personally identifiable information is included.</li>
+        <li><strong>Firebase Crashlytics:</strong> Collects crash reports (device model, Android version, error stack traces). Automatically disabled in debug builds.</li>
+      </ul>
+
+      <h2>3. Data Sharing</h2>
+      <p>We do <strong>not</strong> sell, rent, or share your personal data with third parties, except:</p>
+      <ul>
+        <li>Firebase (anonymous diagnostic data only, as described in 2.3)</li>
+        <li>As required by law</li>
+      </ul>
+
+      <h2>4. Data Security</h2>
+      <ul>
+        <li>Membership card data is encrypted with AES-256-CBC, with keys protected by Android Keystore.</li>
+        <li>Location data is processed entirely on-device and is never transmitted over any network.</li>
+      </ul>
+
+      <h2>5. Children's Privacy</h2>
+      <p>This app is not designed for children under 13, and we do not knowingly collect personal information from children.</p>
+
+      <h2>6. Your Rights</h2>
+      <p>You may at any time:</p>
+      <ul>
+        <li>Revoke location permissions via Android system settings</li>
+        <li>Delete all membership card data within the app</li>
+        <li>Uninstall the app to remove all local data</li>
+      </ul>
+
+      <h2>7. Policy Changes</h2>
+      <p>Material changes to this policy will be announced on the GitHub page, and the "Last Updated" date will be revised accordingly.</p>
+
+      <h2>8. Contact</h2>
+      <p>For privacy-related inquiries, please contact us via GitHub Issues:<br>
+      <a href="https://github.com/DdouWill/smartcard/issues" target="_blank">https://github.com/DdouWill/smartcard/issues</a></p>
+
+    </div>
+  </div>
+
+  <footer>
+    © 2026 SmartCard · <a href="https://github.com/DdouWill/smartcard" target="_blank">GitHub</a> · AGPL-3.0 License
+  </footer>
+</div>
+
+<script>
+  function switchLang(lang) {
+    document.querySelectorAll('.lang-section').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.lang-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(lang).classList.add('active');
+    event.target.classList.add('active');
+  }
+</script>
+</body>
+</html>
