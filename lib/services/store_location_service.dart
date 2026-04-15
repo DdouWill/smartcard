@@ -81,8 +81,28 @@ const _storeNameAliases = <String, String>{
   '全國電子 elife': '全國電子',
   // 燦坤
   '燦坤': '燦坤 3C',
-  // 大潤發
+  // 大潤發 / 大全聯
   '大潤發 RT-Mart': '大潤發',
+  '大全聯': '大潤發',
+  'mega pxmart': '大潤發',
+  // 三井 / LaLaport / 漢神 / 高鐵
+  '林口三井': '三井',
+  '台南三井': '三井',
+  '台中港三井': '三井',
+  '三井outlet': '三井',
+  'mitsui outlet park': '三井',
+  'mitsui outlet': '三井',
+  'lalaport': 'LaLaport',
+  '三井lalaport': 'LaLaport',
+  '三井 lalaport': 'LaLaport',
+  '漢神': '漢神百貨',
+  '漢神巨蛋': '漢神百貨',
+  '漢神洲際': '漢神百貨',
+  '新濱町': '漢神百貨',
+  'hanshin': '漢神百貨',
+  '高鐵': '台灣高鐵',
+  'thsr': '台灣高鐵',
+  '台灣高鐵 thsr': '台灣高鐵',
   // 美廉社
   '美廉社 Simple Mart': '美廉社',
   // 大創
