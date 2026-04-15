@@ -81,6 +81,9 @@ const _storeNameAliases = <String, String>{
   '全國電子 elife': '全國電子',
   // 燦坤
   '燦坤': '燦坤 3C',
+  // UNIQLO
+  'uniqlo': 'UNIQLO',
+  '優衣庫': 'UNIQLO',
   // 大潤發 / 大全聯
   '大潤發 RT-Mart': '大潤發',
   '大全聯': '大潤發',
@@ -103,6 +106,8 @@ const _storeNameAliases = <String, String>{
   '高鐵': '台灣高鐵',
   'thsr': '台灣高鐵',
   '台灣高鐵 thsr': '台灣高鐵',
+  // 振宇五金
+  '振宇': '振宇五金',
   // 美廉社
   '美廉社 Simple Mart': '美廉社',
   // 大創
