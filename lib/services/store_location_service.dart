@@ -81,9 +81,15 @@ const _storeNameAliases = <String, String>{
   '全國電子 elife': '全國電子',
   // 燦坤
   '燦坤': '燦坤 3C',
+  // GU
+  'gu': 'GU',
   // UNIQLO
   'uniqlo': 'UNIQLO',
   '優衣庫': 'UNIQLO',
+  // MUJI
+  'muji': 'MUJI',
+  '無印良品': 'MUJI',
+  '無印': 'MUJI',
   // 大潤發 / 大全聯
   '大潤發 RT-Mart': '大潤發',
   '大全聯': '大潤發',
