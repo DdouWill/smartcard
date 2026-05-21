@@ -813,17 +813,12 @@ class _AddCardScreenState extends State<AddCardScreen>
 
   /// 嘗試從辨識文字自動選中已知店家
   void _tryAutoSelectStore(String recognizedText) {
-    final lower = recognizedText.toLowerCase();
-    for (final store in knownStores) {
-      final storeLower = store.name.toLowerCase();
-      if (lower.contains(storeLower) || storeLower.contains(lower)) {
-        _selectedStoreKey = store.name;
-        _storeNameController.text = store.name;
-        if (store.defaultBarcodeFormat != null) {
-          _selectedFormat = _parseBarcodeFormat(store.defaultBarcodeFormat!);
-        }
-        return;
-      }
+    final store = findKnownStore(recognizedText);
+    if (store == null) return;
+    _selectedStoreKey = store.name;
+    _storeNameController.text = store.name;
+    if (store.defaultBarcodeFormat != null) {
+      _selectedFormat = _parseBarcodeFormat(store.defaultBarcodeFormat!);
     }
   }
 
@@ -853,15 +848,8 @@ class _AddCardScreenState extends State<AddCardScreen>
 
   /// 嘗試將店名匹配到已知店家，找不到則回傳 _kOtherStore
   String _matchKnownStore(String name) {
-    final lower = name.toLowerCase();
-    for (final store in knownStores) {
-      if (store.name.toLowerCase() == lower ||
-          store.name.toLowerCase().contains(lower) ||
-          lower.contains(store.name.toLowerCase())) {
-        return store.name;
-      }
-    }
-    return _kOtherStore;
+    final store = findKnownStore(name);
+    return store?.name ?? _kOtherStore;
   }
 
   // ──────────────────────────────────────────

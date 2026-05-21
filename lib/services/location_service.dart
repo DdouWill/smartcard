@@ -50,8 +50,10 @@ class LocationService {
   LocationService._internal();
 
   final NetworkInfo _networkInfo = NetworkInfo();
-  static const _channel = MethodChannel('com.ddouwill.smartcard/location_service');
-  static const _locationChannel = MethodChannel('com.ddouwill.smartcard/location');
+  static const _channel =
+      MethodChannel('com.ddouwill.smartcard/location_service');
+  static const _locationChannel =
+      MethodChannel('com.ddouwill.smartcard/location');
 
   /// Kotlin 端匹配結果的有效時間（5 分鐘）
   static const _kotlinMatchMaxAge = Duration(minutes: 5);
@@ -84,8 +86,7 @@ class LocationService {
       if (defaultTargetPlatform == TargetPlatform.android) {
         await _channel.invokeMethod('stopLocationService');
       }
-    } catch (_) {
-    }
+    } catch (_) {}
   }
 
   // ──────────────────────────────────────────
@@ -123,7 +124,8 @@ class LocationService {
     LocationResult result;
 
     if (kEnableDebugLog) {
-      debugPrint('[Location] matchCardsByLocation start, cards=${allCards.length}, wifi=$enableWifi, gps=$enableGps');
+      debugPrint(
+          '[Location] matchCardsByLocation start, cards=${allCards.length}, wifi=$enableWifi, gps=$enableGps');
     }
 
     // ── Step 1：WiFi SSID 比對 ──
@@ -157,7 +159,8 @@ class LocationService {
         final kotlinResult = await _readKotlinMatchResult(allCards, pos);
         if (kotlinResult != null && kotlinResult.hasMatches) {
           if (kEnableDebugLog) {
-            debugPrint('[Location] 使用 Kotlin 端匹配結果: matched=${kotlinResult.matchedCards.length}');
+            debugPrint(
+                '[Location] 使用 Kotlin 端匹配結果: matched=${kotlinResult.matchedCards.length}');
           }
           return _updateLastResult(kotlinResult);
         }
@@ -223,7 +226,8 @@ class LocationService {
 
       if (kEnableDebugLog) {
         if (nearest != null) {
-          debugPrint('[Location] Nearest: ${nearest.brandName} @ ${nearest.distanceMeters.toStringAsFixed(0)}m');
+          debugPrint(
+              '[Location] Nearest: ${nearest.brandName} @ ${nearest.distanceMeters.toStringAsFixed(0)}m');
         } else {
           debugPrint('[Location] Nearest: none found');
         }
@@ -277,7 +281,8 @@ class LocationService {
 
       // 檢查 timestamp 是否在有效範圍內
       // Kotlin 端用 putString 存所有數值，避免 home_widget 的 getLong/getFloat 型別不匹配
-      final timestampStr = await HomeWidget.getWidgetData<String>('match_timestamp');
+      final timestampStr =
+          await HomeWidget.getWidgetData<String>('match_timestamp');
       if (timestampStr == null) return null;
       final timestamp = int.tryParse(timestampStr);
       if (timestamp == null) return null;
@@ -285,13 +290,15 @@ class LocationService {
       final matchTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
       if (DateTime.now().difference(matchTime) > _kotlinMatchMaxAge) {
         if (kEnableDebugLog) {
-          debugPrint('[Location] Kotlin 匹配結果已過期 (${DateTime.now().difference(matchTime).inSeconds}s ago)');
+          debugPrint(
+              '[Location] Kotlin 匹配結果已過期 (${DateTime.now().difference(matchTime).inSeconds}s ago)');
         }
         return null;
       }
 
       // 讀取匹配到的品牌清單
-      final matchedBrandsJson = await HomeWidget.getWidgetData<String>('matched_brands');
+      final matchedBrandsJson =
+          await HomeWidget.getWidgetData<String>('matched_brands');
       if (matchedBrandsJson == null) return null;
 
       final List<dynamic> matchedBrandNames = json.decode(matchedBrandsJson);
@@ -334,15 +341,22 @@ class LocationService {
   }
 
   /// 從 Kotlin 端的 SharedPreferences 讀取最近門市資訊
-  Future<NearestStoreInfo?> _readKotlinNearestStore(List<MemberCard> allCards) async {
+  Future<NearestStoreInfo?> _readKotlinNearestStore(
+      List<MemberCard> allCards) async {
     try {
       if (defaultTargetPlatform != TargetPlatform.android) return null;
 
-      final nearestName = await HomeWidget.getWidgetData<String>('nearest_brand_name');
-      final nearestDistStr = await HomeWidget.getWidgetData<String>('nearest_brand_distance');
-      final nearestDistance = nearestDistStr != null ? double.tryParse(nearestDistStr) : null;
+      final nearestName =
+          await HomeWidget.getWidgetData<String>('nearest_brand_name');
+      final nearestDistStr =
+          await HomeWidget.getWidgetData<String>('nearest_brand_distance');
+      final nearestDistance =
+          nearestDistStr != null ? double.tryParse(nearestDistStr) : null;
 
-      if (nearestName == null || nearestName.isEmpty || nearestDistance == null || nearestDistance < 0) {
+      if (nearestName == null ||
+          nearestName.isEmpty ||
+          nearestDistance == null ||
+          nearestDistance < 0) {
         return null;
       }
 
@@ -378,8 +392,8 @@ class LocationService {
     for (final card in allCards) {
       if (card.gpsZones.isEmpty) continue;
       for (final zone in card.gpsZones) {
-        final dist = calculateDistance(
-            position.latitude, position.longitude, zone.latitude, zone.longitude);
+        final dist = calculateDistance(position.latitude, position.longitude,
+            zone.latitude, zone.longitude);
         if (dist <= zone.radiusMeters) {
           matched.add(card);
           break;
@@ -499,11 +513,12 @@ class LocationService {
       if (card.gpsZones.isNotEmpty) {
         // 有自訂 GPS 圍欄 → 用卡片自帶座標比對
         for (final zone in card.gpsZones) {
-          final dist = calculateDistance(
-              position.latitude, position.longitude, zone.latitude, zone.longitude);
+          final dist = calculateDistance(position.latitude, position.longitude,
+              zone.latitude, zone.longitude);
           final inZone = dist <= zone.radiusMeters;
           if (kEnableDebugLog) {
-            debugPrint('[Location] Match: ${card.storeName} @ ${dist.toStringAsFixed(0)}m (radius: ${zone.radiusMeters}m) → ${inZone ? "HIT" : "miss"}');
+            debugPrint(
+                '[Location] Match: ${card.storeName} @ ${dist.toStringAsFixed(0)}m (radius: ${zone.radiusMeters}m) → ${inZone ? "HIT" : "miss"}');
           }
           if (inZone) {
             matched.add(card);
@@ -520,11 +535,12 @@ class LocationService {
         );
         bool isMatched = false;
         for (final zone in nearbyZones) {
-          final dist = calculateDistance(
-              position.latitude, position.longitude, zone.latitude, zone.longitude);
+          final dist = calculateDistance(position.latitude, position.longitude,
+              zone.latitude, zone.longitude);
           final inZone = dist <= zone.radiusMeters;
           if (kEnableDebugLog) {
-            debugPrint('[Location] Match: ${card.storeName} @ ${dist.toStringAsFixed(0)}m (radius: ${zone.radiusMeters}m) → ${inZone ? "HIT" : "miss"}');
+            debugPrint(
+                '[Location] Match: ${card.storeName} @ ${dist.toStringAsFixed(0)}m (radius: ${zone.radiusMeters}m) → ${inZone ? "HIT" : "miss"}');
           }
           if (inZone) {
             isMatched = true;
@@ -540,6 +556,27 @@ class LocationService {
       trigger: LocationTrigger.gps,
       currentPosition: position,
     );
+  }
+
+  @visibleForTesting
+  Future<LocationResult> matchCardsByGpsPositionForTest({
+    required List<MemberCard> allCards,
+    required double latitude,
+    required double longitude,
+  }) async {
+    final position = Position(
+      latitude: latitude,
+      longitude: longitude,
+      timestamp: DateTime.now(),
+      accuracy: 0,
+      altitude: 0,
+      altitudeAccuracy: 0,
+      heading: 0,
+      headingAccuracy: 0,
+      speed: 0,
+      speedAccuracy: 0,
+    );
+    return _matchByGps(allCards, position);
   }
 
   // ──────────────────────────────────────────

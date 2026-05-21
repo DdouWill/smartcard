@@ -22,7 +22,7 @@
 - noMatch 智慧提示（區分無卡片 / 有卡無匹配）
 
 ### 門市資料
-- 22,000+ 門市座標（38 品牌）
+- 22,000+ 門市座標（44 品牌）
 - 7-ELEVEN、全家：官方 API
 - 其他品牌：OpenStreetMap
 
@@ -36,6 +36,8 @@
 - **語言**：Dart + Kotlin（Widget / Geofence）
 - **最低版本**：Android 8.0 (API 26)
 - **Build**：compileSdk 36, AGP 8.7.3, Gradle 8.9
+- **iOS 支援**：開發中（需要 macOS + Xcode 進行 build）
+- **CI/CD**：Codemagic
 
 ## 授權
 
