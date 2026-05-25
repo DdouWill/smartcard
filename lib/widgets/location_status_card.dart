@@ -19,6 +19,7 @@ import '../services/location_service.dart';
 import '../services/store_location_service.dart';
 import '../utils/color_utils.dart';
 import 'barcode_display_widget.dart';
+import 'store_brand_icon.dart';
 
 /// 定位狀態卡片
 ///
@@ -317,18 +318,10 @@ class LocationStatusCard extends StatelessWidget {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            CircleAvatar(
-                              backgroundColor: color,
-                              radius: 16,
-                              child: Text(
-                                card.storeName.isNotEmpty
-                                    ? card.storeName[0]
-                                    : '?',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                            StoreBrandIcon(
+                              storeName: card.storeName,
+                              radius: 20,
+                              cardColor: color,
                             ),
                             const SizedBox(height: 4),
                             Text(

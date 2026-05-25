@@ -3,31 +3,34 @@ class KnownStore {
   final String name;
   final String? defaultBarcodeFormat;
   final String emoji;
+  /// 品牌主色（ARGB hex，例如 'FF006400'）；null 表示使用卡片自訂色或主題色
+  final String? brandColor;
 
-  const KnownStore(this.name, {this.defaultBarcodeFormat, this.emoji = '💳'});
+  const KnownStore(this.name,
+      {this.defaultBarcodeFormat, this.emoji = '💳', this.brandColor});
 }
 
 const List<KnownStore> knownStores = [
   // 超商
-  KnownStore('7-ELEVEN', defaultBarcodeFormat: 'CODE128', emoji: '🏪'),
-  KnownStore('全家 FamilyMart', defaultBarcodeFormat: 'CODE128', emoji: '🏪'),
-  KnownStore('萊爾富 Hi-Life', defaultBarcodeFormat: 'CODE128', emoji: '🏪'),
-  KnownStore('OK 超商', defaultBarcodeFormat: 'CODE128', emoji: '🏪'),
+  KnownStore('7-ELEVEN', defaultBarcodeFormat: 'CODE128', emoji: '🏪', brandColor: 'FFEE4422'),
+  KnownStore('全家 FamilyMart', defaultBarcodeFormat: 'CODE128', emoji: '🏪', brandColor: 'FF006B3C'),
+  KnownStore('萊爾富 Hi-Life', defaultBarcodeFormat: 'CODE128', emoji: '🏪', brandColor: 'FF0057A8'),
+  KnownStore('OK 超商', defaultBarcodeFormat: 'CODE128', emoji: '🏪', brandColor: 'FF1B5E20'),
 
   // 量販超市
-  KnownStore('全聯福利中心', defaultBarcodeFormat: 'EAN13', emoji: '🛒'),
-  KnownStore('家樂福 Carrefour', defaultBarcodeFormat: 'EAN13', emoji: '🛒'),
-  KnownStore('大全聯', defaultBarcodeFormat: 'EAN13', emoji: '🛒'),
-  KnownStore('好市多 Costco', defaultBarcodeFormat: 'CODE128', emoji: '🛒'),
-  KnownStore('美廉社', defaultBarcodeFormat: 'EAN13', emoji: '🛒'),
-  KnownStore('頂好 Wellcome', defaultBarcodeFormat: 'EAN13', emoji: '🛒'),
-  KnownStore('愛買', defaultBarcodeFormat: 'EAN13', emoji: '🛒'),
+  KnownStore('全聯福利中心', defaultBarcodeFormat: 'EAN13', emoji: '🛒', brandColor: 'FFCC0000'),
+  KnownStore('家樂福 Carrefour', defaultBarcodeFormat: 'EAN13', emoji: '🛒', brandColor: 'FF0063B8'),
+  KnownStore('大全聯', defaultBarcodeFormat: 'EAN13', emoji: '🛒', brandColor: 'FFCC0000'),
+  KnownStore('好市多 Costco', defaultBarcodeFormat: 'CODE128', emoji: '🛒', brandColor: 'FF005DAA'),
+  KnownStore('美廉社', defaultBarcodeFormat: 'EAN13', emoji: '🛒', brandColor: 'FF2E7D32'),
+  KnownStore('頂好 Wellcome', defaultBarcodeFormat: 'EAN13', emoji: '🛒', brandColor: 'FF1565C0'),
+  KnownStore('愛買', defaultBarcodeFormat: 'EAN13', emoji: '🛒', brandColor: 'FFAA0000'),
 
   // 藥妝美妝
-  KnownStore('屈臣氏 Watsons', defaultBarcodeFormat: 'CODE128', emoji: '💊'),
-  KnownStore('康是美 COSMED', defaultBarcodeFormat: 'CODE128', emoji: '💊'),
-  KnownStore('寶雅 POYA', defaultBarcodeFormat: 'CODE128', emoji: '💄'),
-  KnownStore('小三美日', defaultBarcodeFormat: 'CODE128', emoji: '💄'),
+  KnownStore('屈臣氏 Watsons', defaultBarcodeFormat: 'CODE128', emoji: '💊', brandColor: 'FF00B5AD'),
+  KnownStore('康是美 COSMED', defaultBarcodeFormat: 'CODE128', emoji: '💊', brandColor: 'FFD32F2F'),
+  KnownStore('寶雅 POYA', defaultBarcodeFormat: 'CODE128', emoji: '💄', brandColor: 'FF880E4F'),
+  KnownStore('小三美日', defaultBarcodeFormat: 'CODE128', emoji: '💄', brandColor: 'FFE91E63'),
 
   // 百貨購物
   KnownStore('新光三越', defaultBarcodeFormat: 'CODE128', emoji: '🏬'),
@@ -55,13 +58,13 @@ const List<KnownStore> knownStores = [
   KnownStore('金石堂', defaultBarcodeFormat: 'CODE128', emoji: '📚'),
 
   // 餐飲
-  KnownStore('路易莎 Louisa', defaultBarcodeFormat: 'CODE128', emoji: '☕'),
-  KnownStore('星巴克 Starbucks', defaultBarcodeFormat: 'CODE128', emoji: '☕'),
-  KnownStore('cama café', defaultBarcodeFormat: 'CODE128', emoji: '☕'),
-  KnownStore('摩斯漢堡', defaultBarcodeFormat: 'CODE128', emoji: '🍔'),
-  KnownStore('麥當勞', defaultBarcodeFormat: 'CODE128', emoji: '🍔'),
-  KnownStore('肯德基 KFC', defaultBarcodeFormat: 'CODE128', emoji: '🍗'),
-  KnownStore('八方雲集', defaultBarcodeFormat: 'CODE128', emoji: '🥟'),
+  KnownStore('路易莎 Louisa', defaultBarcodeFormat: 'CODE128', emoji: '☕', brandColor: 'FF5D4037'),
+  KnownStore('星巴克 Starbucks', defaultBarcodeFormat: 'CODE128', emoji: '☕', brandColor: 'FF00704A'),
+  KnownStore('cama café', defaultBarcodeFormat: 'CODE128', emoji: '☕', brandColor: 'FF6D4C41'),
+  KnownStore('摩斯漢堡', defaultBarcodeFormat: 'CODE128', emoji: '🍔', brandColor: 'FF2E7D32'),
+  KnownStore('麥當勞', defaultBarcodeFormat: 'CODE128', emoji: '🍔', brandColor: 'FFDA1F1F'),
+  KnownStore('肯德基 KFC', defaultBarcodeFormat: 'CODE128', emoji: '🍗', brandColor: 'FFB71C1C'),
+  KnownStore('八方雲集', defaultBarcodeFormat: 'CODE128', emoji: '🥟', brandColor: 'FFEF6C00'),
 
   // 電器 3C
   KnownStore('全國電子', defaultBarcodeFormat: 'CODE128', emoji: '🔌'),
@@ -153,4 +156,10 @@ String normalizeKnownStoreName(String storeName) {
 String getStoreEmoji(String storeName) {
   final store = findKnownStore(storeName);
   return store?.emoji ?? '💳';
+}
+
+/// 根據店家名稱取得品牌主色（ARGB hex 字串），無資料回傳 null
+String? getStoreBrandColor(String storeName) {
+  final store = findKnownStore(storeName);
+  return store?.brandColor;
 }

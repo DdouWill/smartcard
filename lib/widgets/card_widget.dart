@@ -7,10 +7,10 @@
 
 import 'package:flutter/material.dart';
 
-import '../data/known_stores.dart';
 import '../models/member_card.dart';
 import '../utils/color_utils.dart';
 import 'barcode_display_widget.dart';
+import 'store_brand_icon.dart';
 
 /// 卡片列表項目
 ///
@@ -123,14 +123,11 @@ class CardWidget extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        // 店家 emoji 圓形
-                        CircleAvatar(
-                          backgroundColor: cardColor,
+                        // 店家品牌 icon
+                        StoreBrandIcon(
+                          storeName: card.storeName,
                           radius: 22,
-                          child: Text(
-                            getStoreEmoji(card.storeName),
-                            style: const TextStyle(fontSize: 22),
-                          ),
+                          cardColor: cardColor,
                         ),
                         const SizedBox(width: 12),
 
