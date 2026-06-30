@@ -10,6 +10,7 @@ import 'package:home_widget/home_widget.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
+import 'data/known_stores.dart';
 import 'models/member_card.dart';
 import 'models/app_settings.dart';
 import 'services/database_service.dart';
@@ -221,6 +222,10 @@ class AppController extends ChangeNotifier {
                 'barcodeValue': card.barcodeValue,
                 'barcodeFormat': card.barcodeFormat.name,
                 'cardColor': card.cardColor ?? '#2196F3',
+                'storeLogoLabel': getStoreLogoLabel(card.storeName),
+                'storeBrandColor': getStoreBrandColor(card.storeName) ??
+                    card.cardColor ??
+                    '#2196F3',
               })
           .toList();
       await HomeWidget.saveWidgetData<String>(

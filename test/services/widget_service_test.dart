@@ -10,12 +10,14 @@ MemberCard testCard({
   required String id,
   required String storeName,
   required String barcodeValue,
+  String? cardColor,
 }) {
   return MemberCard(
     id: id,
     storeName: storeName,
     barcodeValue: barcodeValue,
     barcodeFormat: BarcodeFormatType.ean13,
+    cardColor: cardColor,
   );
 }
 
@@ -64,6 +66,8 @@ void main() {
       expect(savedData['widget_title'], 'MUJI');
       expect(savedData['primary_store_name'], 'MUJI');
       expect(savedData['primary_barcode_value'], '4710088020017');
+      expect(savedData['primary_store_logo_label'], 'MUJI');
+      expect(savedData['primary_store_brand_color'], 'FF7F0019');
       expect(savedData['_updateWidgetCalled'], true);
     });
 
@@ -89,6 +93,8 @@ void main() {
       expect(savedData['widget_title'], '最近門市・180m');
       expect(savedData['primary_store_name'], 'MUJI');
       expect(savedData['primary_barcode_value'], '4710088020017');
+      expect(savedData['primary_store_logo_label'], 'MUJI');
+      expect(savedData['primary_store_brand_color'], 'FF7F0019');
       expect(savedData['nearest_store_text'], 'MUJI（180m）');
     });
 
@@ -114,7 +120,38 @@ void main() {
       expect(savedData['widget_title'], '附近無符合店家');
       expect(savedData['primary_store_name'], '');
       expect(savedData['primary_barcode_value'], '');
+      expect(savedData['primary_store_logo_label'], '');
+      expect(savedData['primary_store_brand_color'], '');
       expect(savedData['nearest_store_text'], 'MUJI（1.4km）');
+    });
+
+    test('多張命中卡片時，widget 會為每張卡儲存品牌 logo metadata', () async {
+      final seven = testCard(
+        id: 'seven-1',
+        storeName: '7-ELEVEN',
+        barcodeValue: '7110000000001',
+      );
+      final family = testCard(
+        id: 'family-1',
+        storeName: '全家 FamilyMart',
+        barcodeValue: '4710000000002',
+      );
+
+      await widgetService.updateWidget(
+        matchedCards: [seven, family],
+        allCards: [seven, family],
+      );
+
+      expect(savedData['widget_mode'], WidgetDisplayMode.multipleCards.name);
+      expect(savedData['card_count'], 2);
+      expect(savedData['card_0_store_name'], '7-ELEVEN');
+      expect(savedData['card_0_store_logo_label'], '7');
+      expect(savedData['card_0_store_brand_color'], 'FFEE4422');
+      expect(savedData['card_1_store_name'], '全家 FamilyMart');
+      expect(savedData['card_1_store_logo_label'], '全家');
+      expect(savedData['card_1_store_brand_color'], 'FF006B3C');
+      expect(savedData['card_2_store_logo_label'], '');
+      expect(savedData['card_2_store_brand_color'], '');
     });
   });
 }

@@ -115,11 +115,10 @@ object WidgetMatchHelper {
                     editor.putString("primary_store_name", "")
                     editor.putString("primary_barcode_value", "")
                     editor.putString("primary_card_id", "")
+                    clearCardPrefs(editor, "primary")
                 } else {
                     editor.putString("widget_title", "附近無符合店家")
-                    editor.putString("primary_store_name", "")
-                    editor.putString("primary_barcode_value", "")
-                    editor.putString("primary_card_id", "")
+                    clearCardPrefs(editor, "primary")
                 }
 
                 // 最近門市提示
@@ -403,6 +402,11 @@ object WidgetMatchHelper {
         editor.putString("${prefix}_barcode_value", card.optString("barcodeValue", ""))
         editor.putString("${prefix}_barcode_format", card.optString("barcodeFormat", "code128"))
         editor.putString("${prefix}_card_color", card.optString("cardColor", "#2196F3"))
+        editor.putString("${prefix}_store_logo_label", card.optString("storeLogoLabel", ""))
+        editor.putString(
+            "${prefix}_store_brand_color",
+            card.optString("storeBrandColor", card.optString("cardColor", "#2196F3"))
+        )
         editor.putString("${prefix}_card_id", card.optString("id", ""))
     }
 
@@ -414,6 +418,8 @@ object WidgetMatchHelper {
         editor.putString("${prefix}_barcode_value", "")
         editor.putString("${prefix}_barcode_format", "")
         editor.putString("${prefix}_card_color", "")
+        editor.putString("${prefix}_store_logo_label", "")
+        editor.putString("${prefix}_store_brand_color", "")
         editor.putString("${prefix}_card_id", "")
     }
 

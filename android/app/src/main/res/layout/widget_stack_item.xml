@@ -22,7 +22,7 @@
             android:layout_height="24dp"
             android:src="@mipmap/ic_launcher"
             android:layout_marginEnd="4dp"
-            android:contentDescription="App icon" />
+            android:contentDescription="店家品牌 logo" />
 
         <TextView
             android:id="@+id/widget_item_store_name"

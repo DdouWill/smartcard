@@ -228,6 +228,7 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
 
         if (storeName.isNotEmpty() && cardId.isNotEmpty()) {
             showCardViews(views, storeName)
+            setStoreLogo(views, R.id.widget_app_icon, widgetData, "primary", storeName)
 
             val barcodeValue = widgetData.getString("primary_barcode_value", "") ?: ""
             val barcodeFormat = widgetData.getString("primary_barcode_format", "CODE_128") ?: "CODE_128"
@@ -285,6 +286,7 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
         val barcodeFormat = widgetData.getString("primary_barcode_format", "CODE_128") ?: "CODE_128"
 
         showCardViews(views, storeName)
+        setStoreLogo(views, R.id.widget_app_icon, widgetData, "primary", storeName)
         views.setViewVisibility(R.id.widget_page_indicator, View.GONE)
         setBarcodeDisplay(views, barcodeValue, barcodeFormat)
 
@@ -370,6 +372,24 @@ class SmartCardWidgetProvider : AppWidgetProvider() {
         views.setViewVisibility(R.id.widget_empty_text, View.GONE)
         views.setViewVisibility(R.id.widget_nearest_text, View.GONE)
         views.setTextViewText(R.id.widget_store_name, storeName)
+    }
+
+    /** 設定店家品牌 logo badge */
+    private fun setStoreLogo(
+        views: RemoteViews,
+        imageViewId: Int,
+        widgetData: android.content.SharedPreferences,
+        prefix: String,
+        storeName: String
+    ) {
+        val bitmap = StoreBrandLogo.renderBitmap(
+            storeName = storeName,
+            logoLabel = widgetData.getString("${prefix}_store_logo_label", null),
+            brandColorHex = widgetData.getString("${prefix}_store_brand_color", null),
+            cardColorHex = widgetData.getString("${prefix}_card_color", null),
+            sizePx = 96
+        )
+        views.setImageViewBitmap(imageViewId, bitmap)
     }
 
     /** 設定條碼圖片 */

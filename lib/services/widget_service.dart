@@ -9,6 +9,7 @@ import 'dart:async';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:home_widget/home_widget.dart';
 
+import '../data/known_stores.dart';
 import '../models/member_card.dart';
 import 'store_location_service.dart';
 
@@ -87,7 +88,8 @@ class WidgetService {
       final brandLower = nearestStore.brandName.toLowerCase();
       for (final card in allCards) {
         final storeLower = card.storeName.toLowerCase();
-        if (storeLower.contains(brandLower) || brandLower.contains(storeLower)) {
+        if (storeLower.contains(brandLower) ||
+            brandLower.contains(storeLower)) {
           nearestCard = card;
           break;
         }
@@ -103,15 +105,11 @@ class WidgetService {
     } else if (allCards.isEmpty) {
       // 完全沒有卡片時顯示引導文字
       await HomeWidget.saveWidgetData<String>('widget_title', '點擊新增會員卡');
-      await HomeWidget.saveWidgetData<String>('primary_store_name', '');
-      await HomeWidget.saveWidgetData<String>('primary_barcode_value', '');
-      await HomeWidget.saveWidgetData<String>('primary_card_id', '');
+      await _clearCardData('primary');
     } else {
       // 有卡片但距離太遠或無對應品牌
       await HomeWidget.saveWidgetData<String>('widget_title', '附近無符合店家');
-      await HomeWidget.saveWidgetData<String>('primary_store_name', '');
-      await HomeWidget.saveWidgetData<String>('primary_barcode_value', '');
-      await HomeWidget.saveWidgetData<String>('primary_card_id', '');
+      await _clearCardData('primary');
     }
 
     // 儲存最近門市資訊供 Widget 顯示
@@ -185,6 +183,14 @@ class WidgetService {
       card.cardColor ?? '#2196F3', // 預設藍色
     );
     await HomeWidget.saveWidgetData<String>(
+      '${prefix}_store_logo_label',
+      getStoreLogoLabel(card.storeName),
+    );
+    await HomeWidget.saveWidgetData<String>(
+      '${prefix}_store_brand_color',
+      getStoreBrandColor(card.storeName) ?? card.cardColor ?? '#2196F3',
+    );
+    await HomeWidget.saveWidgetData<String>(
       '${prefix}_card_id',
       card.id,
     );
@@ -196,6 +202,8 @@ class WidgetService {
     await HomeWidget.saveWidgetData<String>('${prefix}_barcode_value', '');
     await HomeWidget.saveWidgetData<String>('${prefix}_barcode_format', '');
     await HomeWidget.saveWidgetData<String>('${prefix}_card_color', '');
+    await HomeWidget.saveWidgetData<String>('${prefix}_store_logo_label', '');
+    await HomeWidget.saveWidgetData<String>('${prefix}_store_brand_color', '');
     await HomeWidget.saveWidgetData<String>('${prefix}_card_id', '');
   }
 

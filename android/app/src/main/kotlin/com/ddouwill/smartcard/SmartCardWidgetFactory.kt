@@ -50,6 +50,9 @@ class SmartCardWidgetFactory(private val context: Context) : RemoteViewsService.
         val storeName: String
         val barcodeValue: String
         val barcodeFormat: String
+        val storeLogoLabel: String?
+        val storeBrandColor: String?
+        val cardColor: String?
 
         val cardId: String
 
@@ -58,18 +61,33 @@ class SmartCardWidgetFactory(private val context: Context) : RemoteViewsService.
             storeName = prefs.getString("card_${idx}_store_name", "") ?: ""
             barcodeValue = prefs.getString("card_${idx}_barcode_value", "") ?: ""
             barcodeFormat = prefs.getString("card_${idx}_barcode_format", "CODE_128") ?: "CODE_128"
+            storeLogoLabel = prefs.getString("card_${idx}_store_logo_label", null)
+            storeBrandColor = prefs.getString("card_${idx}_store_brand_color", null)
+            cardColor = prefs.getString("card_${idx}_card_color", null)
             cardId = prefs.getString("card_${idx}_card_id", "") ?: ""
         } else {
             storeName = prefs.getString("primary_store_name", "") ?: ""
             barcodeValue = prefs.getString("primary_barcode_value", "") ?: ""
             barcodeFormat = prefs.getString("primary_barcode_format", "CODE_128") ?: "CODE_128"
+            storeLogoLabel = prefs.getString("primary_store_logo_label", null)
+            storeBrandColor = prefs.getString("primary_store_brand_color", null)
+            cardColor = prefs.getString("primary_card_color", null)
             cardId = prefs.getString("primary_card_id", "") ?: ""
         }
 
         val rv = RemoteViews(context.packageName, R.layout.widget_stack_item)
 
-        // App icon
-        rv.setImageViewResource(R.id.widget_item_icon, R.mipmap.ic_launcher)
+        // Store brand logo
+        rv.setImageViewBitmap(
+            R.id.widget_item_icon,
+            StoreBrandLogo.renderBitmap(
+                storeName = storeName,
+                logoLabel = storeLogoLabel,
+                brandColorHex = storeBrandColor,
+                cardColorHex = cardColor,
+                sizePx = 96
+            )
+        )
 
         // Barcode
         val bitmap = generateBarcodeBitmap(barcodeValue, barcodeFormat)
