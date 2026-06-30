@@ -15,6 +15,7 @@ import 'models/app_settings.dart';
 import 'services/database_service.dart';
 import 'services/location_service.dart';
 import 'services/widget_service.dart';
+import 'utils/location_detection_run_gate.dart';
 
 class AppController extends ChangeNotifier {
   static final AppController _instance = AppController._internal();
@@ -24,6 +25,8 @@ class AppController extends ChangeNotifier {
   final DatabaseService _db = DatabaseService();
   final LocationService _locationService = LocationService();
   final WidgetService _widgetService = WidgetService();
+  final LocationDetectionRunGate _locationDetectionRunGate =
+      LocationDetectionRunGate();
 
   List<MemberCard> _cards = [];
   AppSettings _settings = AppSettings.defaults();
@@ -117,11 +120,27 @@ class AppController extends ChangeNotifier {
   MemberCard? getCardById(String id) => _db.getCardById(id);
 
   Future<void> runLocationDetection() async {
-    if (_isDetecting) return;
+    if (!_locationDetectionRunGate.requestStart()) return;
 
     _isDetecting = true;
     notifyListeners();
 
+    var shouldRerun = true;
+    try {
+      while (shouldRerun) {
+        await _runLocationDetectionOnce();
+        shouldRerun = _locationDetectionRunGate.finishAndConsumePendingRerun();
+      }
+    } finally {
+      while (_locationDetectionRunGate.isRunning) {
+        if (!_locationDetectionRunGate.finishAndConsumePendingRerun()) break;
+      }
+      _isDetecting = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _runLocationDetectionOnce() async {
     try {
       final result = await _locationService.matchCardsByLocation(
         allCards: _cards,
@@ -138,22 +157,19 @@ class AppController extends ChangeNotifier {
       );
     } catch (e, stackTrace) {
       FirebaseCrashlytics.instance.recordError(e, stackTrace);
-    } finally {
-      _isDetecting = false;
-      notifyListeners();
     }
   }
 
   Future<void> updateSettings(AppSettings newSettings) async {
     final oldInterval = _settings.updateIntervalMinutes;
-    
+
     await _db.saveSettings(newSettings);
     _settings = newSettings;
-    
+
     if (oldInterval != newSettings.updateIntervalMinutes) {
       await startBackgroundUpdates();
     }
-    
+
     notifyListeners();
   }
 
@@ -179,10 +195,12 @@ class AppController extends ChangeNotifier {
     ));
   }
 
-  Future<void> setupWidgetCallbacks(void Function(Uri? uri) onWidgetClicked) async {
+  Future<void> setupWidgetCallbacks(
+      void Function(Uri? uri) onWidgetClicked) async {
     _widgetService.setWidgetClickCallback((uri) {
       // Firebase Analytics: widget_clicked
-      final cardId = uri?.pathSegments.isNotEmpty == true ? uri!.pathSegments.last : '';
+      final cardId =
+          uri?.pathSegments.isNotEmpty == true ? uri!.pathSegments.last : '';
       FirebaseAnalytics.instance.logEvent(
         name: 'widget_clicked',
         parameters: {'card_id': cardId},
@@ -196,13 +214,15 @@ class AppController extends ChangeNotifier {
   /// 供 Kotlin WidgetMatchHelper 在背景獨立匹配使用
   Future<void> _syncCardsToNative() async {
     try {
-      final list = _cards.map((card) => {
-        'id': card.id,
-        'storeName': card.storeName,
-        'barcodeValue': card.barcodeValue,
-        'barcodeFormat': card.barcodeFormat.name,
-        'cardColor': card.cardColor ?? '#2196F3',
-      }).toList();
+      final list = _cards
+          .map((card) => {
+                'id': card.id,
+                'storeName': card.storeName,
+                'barcodeValue': card.barcodeValue,
+                'barcodeFormat': card.barcodeFormat.name,
+                'cardColor': card.cardColor ?? '#2196F3',
+              })
+          .toList();
       await HomeWidget.saveWidgetData<String>(
         'native_card_list',
         jsonEncode(list),
@@ -220,9 +240,8 @@ class AppController extends ChangeNotifier {
   Future<void> _updateWidgetSilently() async {
     try {
       final matched = _locationResult?.matchedCards ?? [];
-      final validMatched = matched
-          .where((c) => _cards.any((card) => card.id == c.id))
-          .toList();
+      final validMatched =
+          matched.where((c) => _cards.any((card) => card.id == c.id)).toList();
 
       await _widgetService.updateWidget(
         matchedCards: validMatched,
